@@ -1,16 +1,16 @@
-# app_hara
+# Proyek 3 Mobile
 
-A new Flutter project.
+Aplikasi pelanggan berbasis Flutter untuk belanja hijab dengan fitur rekomendasi warna berbasis AI.
 
-## Getting Started
+## Fitur
+- Login pengguna
+- Melihat produk hijab
+- Rekomendasi warna sesuai warna kulit (AI)
 
-This project is a starting point for a Flutter application.
+## Teknologi
+- Flutter (Mobile App)
+- Laravel (Backend API)
+- AI Recommendation System
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Developer
+- Yolanda

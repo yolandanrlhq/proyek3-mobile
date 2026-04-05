@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
-import 'pages/login_page.dart';
+import 'pages/splash_screen.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const HaraApp());
 }
 
-class MyApp extends StatelessWidget {
+class HaraApp extends StatelessWidget {
+  const HaraApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: LoginPage(),
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
+      home: SplashScreen(), // ⬅️ arahkan ke splash
     );
   }
 }

@@ -3,6 +3,7 @@ import 'product_page.dart';
 import 'discount_page.dart';
 import 'favorite_page.dart';
 import 'faq_page.dart';
+import 'cart_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -23,10 +24,53 @@ class HomePage extends StatelessWidget {
           height: 100,
         ),
         centerTitle: true,
-        actions: const [
-          Icon(Icons.shopping_cart_outlined, color: Colors.grey),
-          SizedBox(width: 16),
-        ],
+        actions: [
+  Padding(
+    padding: const EdgeInsets.only(right: 16),
+    child: Stack(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.shopping_cart_outlined, color: Colors.grey),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const CartPage(),
+              ),
+            );
+          },
+        ),
+
+        // 🔥 BADGE ANGKA
+        if (cartList.isNotEmpty)
+          Positioned(
+            right: 4,
+            top: 4,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              constraints: const BoxConstraints(
+                minWidth: 14,
+                minHeight: 14,
+              ),
+              child: Text(
+                '${cartList.length}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
+    ),
+  ),
+],
       ),
 
       // --- BODY ---
@@ -241,15 +285,17 @@ class HomePage extends StatelessWidget {
             ),
 
             ListTile(
-              leading: Icon(Icons.favorite),
-              title: Text("Favorite"),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const FavoritePage()),
-                );
-              },
-            ),
+  leading: Icon(Icons.favorite),
+  title: Text("Favorite"),
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FavoritePage(favorites: favoriteList), // 🔥 kasih list kosong dulu
+      ),
+    );
+  },
+),
 
             ListTile(
               leading: Icon(Icons.help_outline),

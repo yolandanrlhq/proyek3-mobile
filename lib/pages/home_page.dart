@@ -5,9 +5,14 @@ import 'favorite_page.dart';
 import 'faq_page.dart';
 import 'cart_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     const Color primaryPink = Color(0xFFF7C9C0);
@@ -24,53 +29,64 @@ class HomePage extends StatelessWidget {
           height: 100,
         ),
         centerTitle: true,
-        actions: [
-  Padding(
-    padding: const EdgeInsets.only(right: 16),
-    child: Stack(
-      children: [
-        IconButton(
-          icon: const Icon(Icons.shopping_cart_outlined, color: Colors.grey),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const CartPage(),
-              ),
-            );
-          },
-        ),
 
-        // 🔥 BADGE ANGKA
-        if (cartList.isNotEmpty)
-          Positioned(
-            right: 4,
-            top: 4,
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              constraints: const BoxConstraints(
-                minWidth: 14,
-                minHeight: 14,
-              ),
-              child: Text(
-                '${cartList.length}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
+        // 🔥 FIXED ACTIONS
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.shopping_cart_outlined,
+                    color: Colors.grey,
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CartPage(),
+                      ),
+                    );
+                  },
                 ),
-                textAlign: TextAlign.center,
-              ),
+
+                // 🔥 BADGE REALTIME
+                ValueListenableBuilder<List<Product>>(
+                  valueListenable: cartList,
+                  builder: (context, cart, _) {
+                    if (cart.isEmpty) return const SizedBox();
+
+                    return Positioned(
+                      right: 4,
+                      top: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 14,
+                          minHeight: 14,
+                        ),
+                        child: Text(
+                          '${cart.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
-      ],
-    ),
-  ),
-],
+        ],
       ),
 
       // --- BODY ---
@@ -197,7 +213,6 @@ class HomePage extends StatelessWidget {
               ),
             ),
 
-            // 🔥 BUTTON TENGAH
             Positioned(
               top: -10,
               child: Column(
@@ -237,11 +252,11 @@ class HomePage extends StatelessWidget {
         ),
       ),
 
+      // --- DRAWER ---
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            // 🔥 HEADER
             DrawerHeader(
               decoration: BoxDecoration(
                 color: Color(0xFFF7C9C0),
@@ -260,7 +275,6 @@ class HomePage extends StatelessWidget {
               ),
             ),
 
-            // 🔥 MENU LIST
             ListTile(
               leading: Icon(Icons.shopping_bag),
               title: Text("Product"),
@@ -285,17 +299,18 @@ class HomePage extends StatelessWidget {
             ),
 
             ListTile(
-  leading: Icon(Icons.favorite),
-  title: Text("Favorite"),
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => FavoritePage(favorites: favoriteList), // 🔥 kasih list kosong dulu
-      ),
-    );
-  },
-),
+              leading: Icon(Icons.favorite),
+              title: Text("Favorite"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        FavoritePage(favorites: favoriteList),
+                  ),
+                );
+              },
+            ),
 
             ListTile(
               leading: Icon(Icons.help_outline),
@@ -313,7 +328,6 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // 🔧 NAV ICON FUNCTION
   Widget _buildNavIcon(IconData icon, bool isActive) {
     return Container(
       padding: const EdgeInsets.all(12),

@@ -100,17 +100,13 @@ class FavoritePage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(30),
                         ),
                       ),
-                      onPressed: () {
-  cartList.addAll(favorites);
+                     onPressed: () {
+  cartList.value.addAll(favorites);
+  cartList.notifyListeners(); 
 
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => const CartPage(),
-    ),
-  );
+  Navigator.pop(context);
 },
-                      child: const Text(
+                  child: const Text(
                         "MOVE ALL TO CART",
                         style: TextStyle(color: Colors.black),
                       ),

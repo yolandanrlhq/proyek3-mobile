@@ -16,7 +16,7 @@ class _CartPageState extends State<CartPage> {
   void initState() {
     super.initState();
 
-    for (var item in cartList) {
+    for (var item in cartList.value) {
       qty[item] = 1;
     }
   }
@@ -24,7 +24,7 @@ class _CartPageState extends State<CartPage> {
   int getTotalPrice() {
     int total = 0;
 
-    for (var item in cartList) {
+    for (var item in cartList.value) {
       int price = item.price; // 🔥 LANGSUNG INT
       total += price * (qty[item] ?? 1);
     }
@@ -43,16 +43,16 @@ class _CartPageState extends State<CartPage> {
         centerTitle: true,
       ),
 
-      body: cartList.isEmpty
+      body: cartList.value.isEmpty
           ? const Center(child: Text("Cart masih kosong"))
           : Column(
               children: [
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(12),
-                    itemCount: cartList.length,
+                    itemCount: cartList.value.length,
                     itemBuilder: (context, index) {
-                      final item = cartList[index];
+                      final item = cartList.value[index];
                       int itemQty = qty[item] ?? 1;
 
                       int price = item.price; // 🔥 FIX
@@ -133,7 +133,7 @@ class _CartPageState extends State<CartPage> {
                                   icon: const Icon(Icons.delete),
                                   onPressed: () {
                                     setState(() {
-                                      cartList.remove(item);
+                                      cartList.value.remove(item);
                                       qty.remove(item);
                                     });
                                   },

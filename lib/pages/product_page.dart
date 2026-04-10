@@ -129,55 +129,62 @@ class _ProductPageState extends State<ProductPage> {
           ),
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.shopping_cart_outlined,
-                    color: Colors.black,
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const CartPage()),
-                    ).then((_) {
-                      setState(() {}); // refresh setelah balik dari cart
-                    });
-                  },
-                ),
-
-                // 🔥 BADGE ANGKA
-                if (cartList.isNotEmpty)
-                  Positioned(
-                    right: 4,
-                    top: 4,
-                    child: Container(
-                      padding: const EdgeInsets.all(2), // 🔽 dari 4 → 2
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 14, // 🔽 dari 18 → 14
-                        minHeight: 14,
-                      ),
-                      child: Text(
-                        '${cartList.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9, // 🔽 dari 12 → 9
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+  Padding(
+    padding: const EdgeInsets.only(right: 16),
+    child: Stack(
+      children: [
+        IconButton(
+          icon: const Icon(
+            Icons.shopping_cart_outlined,
+            color: Colors.black,
           ),
-        ],
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CartPage()),
+            ).then((_) {
+              setState(() {}); // tetap dipertahankan
+            });
+          },
+        ),
+
+        // 🔥 BADGE REALTIME
+        ValueListenableBuilder<List<Product>>(
+          valueListenable: cartList,
+          builder: (context, cart, _) {
+            if (cart.isEmpty) return const SizedBox();
+
+            return Positioned(
+              right: 4,
+              top: 4,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 14,
+                  minHeight: 14,
+                ),
+                child: Text(
+                  '${cart.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    ),
+  ),
+],
+        
       ),
 
       body: Column(
@@ -548,4 +555,4 @@ class FilterDialog extends StatelessWidget {
 }
 
 List<Product> favoriteList = [];
-List<Product> cartList = [];
+ValueNotifier<List<Product>> cartList = ValueNotifier([]);

@@ -3,6 +3,7 @@ import 'product_page.dart';
 import 'discount_page.dart';
 import 'favorite_page.dart';
 import 'faq_page.dart';
+import 'glow_match_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -158,24 +159,45 @@ class HomePage extends StatelessWidget {
               top: -10,
               child: Column(
                 children: [
-                  Container(
-                    height: 75,
-                    width: 75,
-                    decoration: BoxDecoration(
-                      color: primaryPink,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black, width: 1),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        )
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt_outlined,
-                      size: 35,
+                  Material(
+                    color: Colors.transparent,
+                    shape: const CircleBorder(),
+                    elevation: 0,
+                    child: Ink(
+                      width: 75,
+                      height: 75,
+                      decoration: BoxDecoration(
+                        color: primaryPink,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.black, width: 1),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        splashColor: Colors.white24,
+                        highlightColor: Colors.black12,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const GlowMatchScanPage(),
+                            ),
+                          );
+                        },
+                        child: const Center(
+                          child: Icon(
+                            Icons.camera_alt_outlined,
+                            size: 35,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),

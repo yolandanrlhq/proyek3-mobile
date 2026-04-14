@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ContactUsPage extends StatelessWidget {
   const ContactUsPage({super.key});
+
+  Future<void> openUrl(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      throw 'Tidak bisa membuka $url';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8C8C0), // Peach khas Hara Hijab
+        backgroundColor: const Color(0xFFF8C8C0),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black54),
@@ -16,7 +24,10 @@ class ContactUsPage extends StatelessWidget {
         ),
         title: const Text(
           "Hubungi Kami",
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
       ),
@@ -27,39 +38,49 @@ class ContactUsPage extends StatelessWidget {
           children: [
             const Text(
               "Punya pertanyaan atau kendala?\nTim kami siap membantu!",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, height: 1.4),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 30),
-            
-            // Pilihan Hubungi via WA
+
             _buildContactMethod(
-              icon: Icons.chat_rounded,
+              imagePath: 'assets/images/wa.png',
               title: "WhatsApp Admin",
               subtitle: "Respon cepat (08.00 - 20.00)",
-              color: Colors.green.shade600,
-              onTap: () => print("Buka WA Admin..."),
+              backgroundColor: Colors.green.shade50,
+              onTap: () {
+                openUrl(
+                  "https://wa.me/628814556388?text=Halo%20Admin%20Hara%20Hijabneeds,%20saya%20ingin%20bertanya.",
+                );
+              },
             ),
-            
+
             const SizedBox(height: 16),
-            
-            // Pilihan via Instagram
+
             _buildContactMethod(
-              icon: Icons.camera_alt_rounded,
+              imagePath: 'assets/images/ig.png',
               title: "Instagram",
-              subtitle: "@hara_hijabneeds",
-              color: const Color(0xFFE4405F),
-              onTap: () => print("Buka Instagram..."),
+              subtitle: "@harahijabneeds",
+              backgroundColor: Colors.pink.shade50,
+              onTap: () {
+                openUrl("https://instagram.com/harahijabneeds");
+              },
             ),
-            
+
             const SizedBox(height: 40),
-            
+
             const Text(
               "Atau tinggalkan pesan di sini:",
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
             ),
             const SizedBox(height: 16),
-            
-            // Form Pesan Singkat
+
             TextField(
               decoration: InputDecoration(
                 hintText: "Tulis pertanyaanmu...",
@@ -73,7 +94,7 @@ class ContactUsPage extends StatelessWidget {
               maxLines: 4,
             ),
             const SizedBox(height: 20),
-            
+
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -81,9 +102,17 @@ class ContactUsPage extends StatelessWidget {
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFF8C8C0),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
                 ),
-                child: const Text("Kirim Pesan", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  "Kirim Pesan",
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ],
@@ -92,13 +121,12 @@ class ContactUsPage extends StatelessWidget {
     );
   }
 
-  // Widget untuk Card Pilihan Hubungi
   Widget _buildContactMethod({
-    required IconData icon, 
-    required String title, 
-    required String subtitle, 
-    required Color color,
-    required VoidCallback onTap
+    required String imagePath,
+    required String title,
+    required String subtitle,
+    required Color backgroundColor,
+    required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
@@ -112,21 +140,42 @@ class ContactUsPage extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-              child: Icon(icon, color: color),
+              width: 48,
+              height: 48,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                shape: BoxShape.circle,
+              ),
+              child: Image.asset(
+                imagePath,
+                fit: BoxFit.contain,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.grey,
+            ),
           ],
         ),
       ),

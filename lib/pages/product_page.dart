@@ -10,7 +10,6 @@ import 'filter_by/type_page.dart';
 import 'filter_by/price_page.dart';
 import 'filter_by/material_page.dart';
 
-
 class ProductPage extends StatefulWidget {
   const ProductPage({super.key});
 
@@ -57,11 +56,11 @@ class _ProductPageState extends State<ProductPage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(color: Color(0xFFF7C9C0)),
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Color(0xFFF7C9C0)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Icon(Icons.person, size: 50),
                   SizedBox(height: 10),
                   Text(
@@ -71,6 +70,18 @@ class _ProductPageState extends State<ProductPage> {
                   Text("Welcome back!"),
                 ],
               ),
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text("Home"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                );
+              },
             ),
 
             ListTile(
@@ -85,6 +96,7 @@ class _ProductPageState extends State<ProductPage> {
               leading: const Icon(Icons.discount),
               title: const Text("Discount"),
               onTap: () {
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const DiscountPage()),
@@ -96,6 +108,7 @@ class _ProductPageState extends State<ProductPage> {
               leading: const Icon(Icons.favorite),
               title: const Text("Favorite"),
               onTap: () {
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -109,6 +122,7 @@ class _ProductPageState extends State<ProductPage> {
               leading: const Icon(Icons.help_outline),
               title: const Text("FAQ"),
               onTap: () {
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const FaqPage()),
@@ -129,75 +143,70 @@ class _ProductPageState extends State<ProductPage> {
           ),
         ),
         actions: [
-  Padding(
-    padding: const EdgeInsets.only(right: 16),
-    child: Stack(
-      children: [
-        IconButton(
-          icon: const Icon(
-            Icons.shopping_cart_outlined,
-            color: Colors.black,
-          ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CartPage()),
-            ).then((_) {
-              setState(() {}); // tetap dipertahankan
-            });
-          },
-        ),
-
-        // 🔥 BADGE REALTIME
-        ValueListenableBuilder<List<Product>>(
-          valueListenable: cartList,
-          builder: (context, cart, _) {
-            if (cart.isEmpty) return const SizedBox();
-
-            return Positioned(
-              right: 4,
-              top: 4,
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                constraints: const BoxConstraints(
-                  minWidth: 14,
-                  minHeight: 14,
-                ),
-                child: Text(
-                  '${cart.length}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.shopping_cart_outlined,
+                    color: Colors.black,
                   ),
-                  textAlign: TextAlign.center,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CartPage()),
+                    ).then((_) {
+                      setState(() {});
+                    });
+                  },
                 ),
-              ),
-            );
-          },
-        ),
-      ],
-    ),
-  ),
-],
-        
+                ValueListenableBuilder<List<Product>>(
+                  valueListenable: cartList,
+                  builder: (context, cart, _) {
+                    if (cart.isEmpty) return const SizedBox();
+
+                    return Positioned(
+                      right: 4,
+                      top: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 14,
+                          minHeight: 14,
+                        ),
+                        child: Text(
+                          '${cart.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
 
       body: Column(
         children: [
           const SizedBox(height: 16),
 
-          // FILTER & SORT
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // FILTER
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -206,8 +215,6 @@ class _ProductPageState extends State<ProductPage> {
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-
-                    // ✅ FIX BUTTON FILTER
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
@@ -229,8 +236,6 @@ class _ProductPageState extends State<ProductPage> {
                     ),
                   ],
                 ),
-
-                // SORT
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -264,8 +269,6 @@ class _ProductPageState extends State<ProductPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-
-                                  // 🔥 ASCENDING
                                   ListTile(
                                     title: const Text("Newest"),
                                     onTap: () {
@@ -274,8 +277,6 @@ class _ProductPageState extends State<ProductPage> {
                                       Navigator.pop(context);
                                     },
                                   ),
-
-                                  // 🔥 DESCENDING
                                   ListTile(
                                     title: const Text("Oldest"),
                                     onTap: () {
@@ -304,7 +305,6 @@ class _ProductPageState extends State<ProductPage> {
 
           const SizedBox(height: 16),
 
-          // GRID PRODUK
           Expanded(
             child: GridView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -331,9 +331,6 @@ class _ProductPageState extends State<ProductPage> {
   }
 }
 
-////////////////////////////////////////////////////////////
-/// MODEL PRODUCT
-////////////////////////////////////////////////////////////
 class Product {
   final String name;
   final int price;
@@ -342,9 +339,6 @@ class Product {
   Product({required this.name, required this.price, required this.image});
 }
 
-////////////////////////////////////////////////////////////
-/// DATA PRODUK
-////////////////////////////////////////////////////////////
 List<Product> products = [
   Product(
     name: "Pashmina Rayon",
@@ -386,9 +380,7 @@ String formatRupiah(int number) {
 
   return "RP${buffer.toString().split('').reversed.join()},00";
 }
-////////////////////////////////////////////////////////////
-/// PRODUCT CARD
-////////////////////////////////////////////////////////////
+
 class ProductCard extends StatelessWidget {
   final Product product;
   final bool isFavorite;
@@ -424,7 +416,6 @@ class ProductCard extends StatelessWidget {
               ),
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
@@ -433,12 +424,12 @@ class ProductCard extends StatelessWidget {
                 Text(product.name),
                 const SizedBox(height: 4),
                 Text(
-  formatRupiah(product.price),
-  style: const TextStyle(
-    color: Colors.green,
-    fontWeight: FontWeight.bold,
-  ),
-),
+                  formatRupiah(product.price),
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -461,9 +452,6 @@ class ProductCard extends StatelessWidget {
   }
 }
 
-////////////////////////////////////////////////////////////
-/// FILTER DIALOG
-////////////////////////////////////////////////////////////
 class FilterDialog extends StatelessWidget {
   const FilterDialog({super.key});
 
@@ -485,15 +473,12 @@ class FilterDialog extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-
             _btn(context, "CATEGORY"),
             _btn(context, "COLOR"),
             _btn(context, "TYPE"),
             _btn(context, "PRICE"),
             _btn(context, "MATERIAL"),
-
             const SizedBox(height: 10),
-
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text("Close"),

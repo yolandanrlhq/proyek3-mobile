@@ -30,7 +30,6 @@ class _HomePageState extends State<HomePage> {
         ),
         centerTitle: true,
 
-        // 🔥 FIXED ACTIONS
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -50,8 +49,6 @@ class _HomePageState extends State<HomePage> {
                     );
                   },
                 ),
-
-                // 🔥 BADGE REALTIME
                 ValueListenableBuilder<List<Product>>(
                   valueListenable: cartList,
                   builder: (context, cart, _) {
@@ -93,7 +90,7 @@ class _HomePageState extends State<HomePage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 🔥 SECTION 1: BANNER
+            // --- SECTION 1: BANNER ---
             Stack(
               alignment: Alignment.center,
               children: [
@@ -119,7 +116,9 @@ class _HomePageState extends State<HomePage> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 30, vertical: 12),
+                        horizontal: 30,
+                        vertical: 12,
+                      ),
                     ),
                     child: const Text(
                       "SHOP NOW!",
@@ -132,7 +131,7 @@ class _HomePageState extends State<HomePage> {
 
             const SizedBox(height: 20),
 
-            // 🔥 SECTION 2: GLOW MATCH
+            // --- SECTION 2: GLOW MATCH ---
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Container(
@@ -166,7 +165,6 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
-
                     Container(
                       height: 150,
                       width: double.infinity,
@@ -212,7 +210,6 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-
             Positioned(
               top: -10,
               child: Column(
@@ -229,7 +226,7 @@ class _HomePageState extends State<HomePage> {
                           color: Colors.black.withOpacity(0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 5),
-                        )
+                        ),
                       ],
                     ),
                     child: const Icon(
@@ -257,18 +254,21 @@ class _HomePageState extends State<HomePage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
+            const DrawerHeader(
               decoration: BoxDecoration(
                 color: Color(0xFFF7C9C0),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Icon(Icons.person, size: 50),
                   SizedBox(height: 10),
                   Text(
                     "Hara Hijabneeds",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text("Welcome back!"),
                 ],
@@ -276,8 +276,20 @@ class _HomePageState extends State<HomePage> {
             ),
 
             ListTile(
-              leading: Icon(Icons.shopping_bag),
-              title: Text("Product"),
+              leading: const Icon(Icons.home),
+              title: const Text("Home"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                );
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.shopping_bag),
+              title: const Text("Product"),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -288,9 +300,10 @@ class _HomePageState extends State<HomePage> {
             ),
 
             ListTile(
-              leading: Icon(Icons.discount),
-              title: Text("Discount"),
+              leading: const Icon(Icons.discount),
+              title: const Text("Discount"),
               onTap: () {
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const DiscountPage()),
@@ -299,9 +312,10 @@ class _HomePageState extends State<HomePage> {
             ),
 
             ListTile(
-              leading: Icon(Icons.favorite),
-              title: Text("Favorite"),
+              leading: const Icon(Icons.favorite),
+              title: const Text("Favorite"),
               onTap: () {
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -313,9 +327,10 @@ class _HomePageState extends State<HomePage> {
             ),
 
             ListTile(
-              leading: Icon(Icons.help_outline),
-              title: Text("FAQ"),
+              leading: const Icon(Icons.help_outline),
+              title: const Text("FAQ"),
               onTap: () {
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const FaqPage()),
@@ -332,8 +347,7 @@ class _HomePageState extends State<HomePage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7C9C0)
-            .withOpacity(isActive ? 1 : 0.5),
+        color: const Color(0xFFF7C9C0).withOpacity(isActive ? 1 : 0.5),
         shape: BoxShape.circle,
       ),
       child: Icon(icon, color: Colors.black, size: 30),

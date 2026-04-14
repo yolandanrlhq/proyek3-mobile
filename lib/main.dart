@@ -10,9 +10,12 @@ class HaraApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: SplashScreen(), // ⬅️ arahkan ke splash
+      theme: ThemeData(
+        fontFamily: 'Jakarta', // atau 'Poppins'
+      ),
+      home: const SplashScreen(), // ⬅️ arahkan ke splash
     );
   }
 }

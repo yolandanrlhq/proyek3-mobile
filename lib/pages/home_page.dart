@@ -3,7 +3,9 @@ import 'product_page.dart';
 import 'discount_page.dart';
 import 'favorite_page.dart';
 import 'faq_page.dart';
+import 'glow_match_page.dart';
 import 'cart_page.dart';
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -226,7 +228,7 @@ class _HomePageState extends State<HomePage> {
                           color: Colors.black.withOpacity(0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 5),
-                        ),
+                        )
                       ],
                     ),
                     child: const Icon(

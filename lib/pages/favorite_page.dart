@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'product_page.dart';
 import 'cart_page.dart';
+import 'home_page.dart';
+import 'discount_page.dart';
+import 'faq_page.dart';
 
 class FavoritePage extends StatelessWidget {
   final List<Product> favorites;
@@ -10,9 +13,98 @@ class FavoritePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+
+      // 🔥 DRAWER BARU
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Color(0xFFF7C9C0)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.person, size: 50),
+                  SizedBox(height: 10),
+                  Text(
+                    "Hara Hijabneeds",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Text("Welcome back!"),
+                ],
+              ),
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text("Home"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const HomePage()),
+                );
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.shopping_bag),
+              title: const Text("Product"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProductPage()),
+                );
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.discount),
+              title: const Text("Discount"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DiscountPage()),
+                );
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.favorite),
+              title: const Text("Favorite"),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.help_outline),
+              title: const Text("FAQ"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const FaqPage()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+
+      // 🔥 APPBAR DITAMBAH MENU
       appBar: AppBar(
         title: Text("My Wishlist (${favorites.length} items)"),
         centerTitle: true,
+
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
       ),
 
       body: favorites.isEmpty
@@ -23,7 +115,8 @@ class FavoritePage extends StatelessWidget {
                   child: GridView.builder(
                     padding: const EdgeInsets.all(12),
                     itemCount: favorites.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       childAspectRatio: 0.75,
                       crossAxisSpacing: 12,
@@ -36,7 +129,7 @@ class FavoritePage extends StatelessWidget {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
                           color: Colors.white,
-                          boxShadow: [
+                          boxShadow: const [
                             BoxShadow(
                               color: Colors.black12,
                               blurRadius: 6,
@@ -66,15 +159,16 @@ class FavoritePage extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-  formatRupiah(item.price),
-  style: const TextStyle(
-    color: Colors.green,
-    fontWeight: FontWeight.bold,
-  ),
-),
+                                    formatRupiah(item.price),
+                                    style: const TextStyle(
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                   const Icon(Icons.favorite_border,
                                       color: Colors.red),
                                 ],
@@ -100,13 +194,13 @@ class FavoritePage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(30),
                         ),
                       ),
-                     onPressed: () {
-  cartList.value.addAll(favorites);
-  cartList.notifyListeners(); 
+                      onPressed: () {
+                        cartList.value.addAll(favorites);
+                        cartList.notifyListeners();
 
-  Navigator.pop(context);
-},
-                  child: const Text(
+                        Navigator.pop(context);
+                      },
+                      child: const Text(
                         "MOVE ALL TO CART",
                         style: TextStyle(color: Colors.black),
                       ),

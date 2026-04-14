@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-// Pastikan import halaman produkmu di sini
-// import 'package:proyek3_mobile/pages/product_page.dart'; 
 import 'product_page.dart';
+import 'home_page.dart';
+import 'favorite_page.dart';
+import 'faq_page.dart';
+
 class DiscountPage extends StatelessWidget {
   const DiscountPage({super.key});
 
@@ -11,13 +13,102 @@ class DiscountPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF8C8C0), // Warna pink peach sesuai desain
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
-          onPressed: () => Navigator.pop(context),
+
+      // 🔥 DRAWER (BARU)
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Color(0xFFF7C9C0)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.person, size: 50),
+                  SizedBox(height: 10),
+                  Text(
+                    "Hara Hijabneeds",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Text("Welcome back!"),
+                ],
+              ),
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text("Home"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const HomePage()),
+                );
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.shopping_bag),
+              title: const Text("Product"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProductPage()),
+                );
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.discount),
+              title: const Text("Discount"),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.favorite),
+              title: const Text("Favorite"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FavoritePage(favorites: favoriteList),
+                  ),
+                );
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.help_outline),
+              title: const Text("FAQ"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const FaqPage()),
+                );
+              },
+            ),
+          ],
         ),
+      ),
+
+      // 🔥 APPBAR (DITAMBAH MENU ICON)
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF8C8C0),
+        elevation: 0,
+
+        // 🔥 BUKA DRAWER
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.black54),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+
         title: const Text(
           "Discount",
           style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
@@ -25,65 +116,59 @@ class DiscountPage extends StatelessWidget {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black54),
+            icon: const Icon(Icons.shopping_cart_outlined,
+                color: Colors.black54),
             onPressed: () {},
           ),
         ],
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // --- BAGIAN YANG DIPERBAIKI (START) ---
-            
-            // Container luar hanya untuk padding & alignment
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8), // Sedikit napas di atas/bawah
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: Material(
-                color: Colors.transparent, // Transparan biar ClipRRect kelihatan
+                color: Colors.transparent,
                 child: InkWell(
-                  // 1. Logika Klik & Navigasi
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text("Discount 10% applied! Happy Shopping..."),
+                        content: Text(
+                            "Discount 10% applied! Happy Shopping..."),
                         backgroundColor: Color(0xFFF8C8C0),
                         duration: Duration(seconds: 1),
                       ),
                     );
 
-                    // Navigasi ke ProductPage
                     Future.delayed(const Duration(milliseconds: 700), () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const ProductPage()),
+                        MaterialPageRoute(
+                            builder: (_) => const ProductPage()),
                       );
                     });
                   },
-                  // Efek klik Material (bulat sesuai card)
                   borderRadius: BorderRadius.circular(20),
-                  splashColor: const Color(0xFFF8C8C0).withOpacity(0.3),
-                  
-                  // Container Utama dengan Bayangan Rapi
+                  splashColor:
+                      const Color(0xFFF8C8C0).withOpacity(0.3),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white, // Background wajib putih biar shadow kelihatan
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
-                        // Ini bayangan yang diperhalus
                         BoxShadow(
-                          color: Colors.grey.withOpacity(0.2), // Lebih halus
-                          spreadRadius: 2, // Sebar lebih luas
-                          blurRadius: 12, // Lebih nge-blur (halus)
-                          offset: const Offset(0, 5), // Geser sedikit ke bawah
+                          color: Colors.grey.withOpacity(0.2),
+                          spreadRadius: 2,
+                          blurRadius: 12,
+                          offset: const Offset(0, 5),
                         ),
                       ],
-                      // Hapus border abu-abu yang kemarin biar makin halus
                     ),
                     child: Row(
                       children: [
-                        // Bagian Gambar (Kiri) - Tetap Rapi dengan ClipRRect
                         Expanded(
                           flex: 4,
                           child: ClipRRect(
@@ -92,26 +177,27 @@ class DiscountPage extends StatelessWidget {
                               bottomLeft: Radius.circular(20),
                             ),
                             child: Image.asset(
-                              'assets/images/banner.jpg', // SESUAIKAN PATH GAMBARMU
+                              'assets/images/banner.jpg',
                               height: 160,
                               fit: BoxFit.cover,
                             ),
                           ),
                         ),
-                        
-                        // Bagian Teks Promo (Kanan)
                         Expanded(
                           flex: 6,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center, // Centered teks
+                              mainAxisAlignment:
+                                  MainAxisAlignment.center,
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.center,
                               children: [
                                 Text(
                                   "FLASH SALE!",
                                   style: TextStyle(
-                                    fontSize: screenWidth * 0.045, // Ukuran font ikut lebar layar
+                                    fontSize: screenWidth * 0.045,
                                     fontWeight: FontWeight.w900,
                                     color: Colors.grey[600],
                                     letterSpacing: 0.8,
@@ -120,8 +206,8 @@ class DiscountPage extends StatelessWidget {
                                 Text(
                                   "10%",
                                   style: TextStyle(
-                                    fontSize: screenWidth * 0.11, // Sedikit diperbesar
-                                    fontWeight: FontWeight.w900, // Lebih tebal
+                                    fontSize: screenWidth * 0.11,
+                                    fontWeight: FontWeight.w900,
                                     height: 1.0,
                                     color: Colors.black87,
                                   ),
@@ -135,19 +221,19 @@ class DiscountPage extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                
-                                // Tombol USE NOW (Sekarang jadi bagian dari Column, biar makin rapi)
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20, vertical: 8),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF8C8C0), // Peach
-                                    borderRadius: BorderRadius.circular(15),
+                                    color: const Color(0xFFF8C8C0),
+                                    borderRadius:
+                                        BorderRadius.circular(15),
                                   ),
                                   child: const Text(
                                     "USE NOW",
                                     style: TextStyle(
                                       fontSize: 10,
-                                      fontWeight: FontWeight.w900, // Sangat tebal
+                                      fontWeight: FontWeight.w900,
                                       color: Colors.black87,
                                     ),
                                   ),
@@ -156,7 +242,10 @@ class DiscountPage extends StatelessWidget {
                                 const Text(
                                   "SPECIAL 2.2 ALL VARIAN",
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Colors.grey),
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.grey),
                                 ),
                               ],
                             ),
@@ -168,8 +257,6 @@ class DiscountPage extends StatelessWidget {
                 ),
               ),
             ),
-            
-            // --- BAGIAN YANG DIPERBAIKI (END) ---
           ],
         ),
       ),

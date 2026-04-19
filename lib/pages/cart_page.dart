@@ -9,15 +9,26 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
-
   Map<Product, int> qty = {};
+  Map<Product, bool> selectedItems = {};
 
   @override
   void initState() {
     super.initState();
 
     for (var item in cartList.value) {
-      qty[item] = 1;
+      qty[item] = qty[item] ?? 1;
+      selectedItems[item] = selectedItems[item] ?? true;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    for (var item in cartList.value) {
+      qty[item] = qty[item] ?? 1;
+      selectedItems[item] = selectedItems[item] ?? true;
     }
   }
 
@@ -25,24 +36,36 @@ class _CartPageState extends State<CartPage> {
     int total = 0;
 
     for (var item in cartList.value) {
-      int price = item.price; // 🔥 LANGSUNG INT
-      total += price * (qty[item] ?? 1);
+      if (selectedItems[item] == true) {
+        int price = item.price;
+        total += price * (qty[item] ?? 1);
+      }
     }
 
     return total;
   }
 
+  void syncCartData() {
+    for (var item in cartList.value) {
+      qty[item] = qty[item] ?? 1;
+      selectedItems[item] = selectedItems[item] ?? true;
+    }
+
+    qty.removeWhere((key, value) => !cartList.value.contains(key));
+    selectedItems.removeWhere((key, value) => !cartList.value.contains(key));
+  }
+
   @override
   Widget build(BuildContext context) {
+    syncCartData();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4EDE7),
-
       appBar: AppBar(
         backgroundColor: const Color(0xFFE6B8AF),
         title: const Text("SHOPPING CART"),
         centerTitle: true,
       ),
-
       body: cartList.value.isEmpty
           ? const Center(child: Text("Cart masih kosong"))
           : Column(
@@ -53,10 +76,10 @@ class _CartPageState extends State<CartPage> {
                     itemCount: cartList.value.length,
                     itemBuilder: (context, index) {
                       final item = cartList.value[index];
-                      int itemQty = qty[item] ?? 1;
-
-                      int price = item.price; // 🔥 FIX
-                      int totalItem = price * itemQty;
+                      final int itemQty = qty[item] ?? 1;
+                      final int price = item.price;
+                      final int totalItem = price * itemQty;
+                      final bool isSelected = selectedItems[item] ?? true;
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
@@ -69,19 +92,49 @@ class _CartPageState extends State<CartPage> {
                               color: Colors.black12,
                               blurRadius: 5,
                               offset: Offset(2, 2),
-                            )
+                            ),
                           ],
                         ),
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Checkbox(
+                              value: isSelected,
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedItems[item] = value ?? false;
+                                });
+                              },
+                            ),
+
                             ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: Image.asset(
-                                item.image,
-                                width: 80,
-                                height: 80,
-                                fit: BoxFit.cover,
-                              ),
+                              child: item.image.isNotEmpty
+                                  ? Image.network(
+                                      item.image,
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return Container(
+                                          width: 80,
+                                          height: 80,
+                                          color: Colors.grey[200],
+                                          alignment: Alignment.center,
+                                          child: const Icon(
+                                            Icons.broken_image,
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  : Container(
+                                      width: 80,
+                                      height: 80,
+                                      color: Colors.grey[200],
+                                      alignment: Alignment.center,
+                                      child: const Icon(Icons.image),
+                                    ),
                             ),
 
                             const SizedBox(width: 12),
@@ -97,11 +150,8 @@ class _CartPageState extends State<CartPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-
-                                  Text(formatRupiah(price)), // 🔥 FIX
-
+                                  Text(formatRupiah(price)),
                                   const SizedBox(height: 8),
-
                                   Row(
                                     children: [
                                       _qtyBtn("-", () {
@@ -112,7 +162,9 @@ class _CartPageState extends State<CartPage> {
                                         }
                                       }),
                                       Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                        ),
                                         child: Text("$itemQty"),
                                       ),
                                       _qtyBtn("+", () {
@@ -135,10 +187,11 @@ class _CartPageState extends State<CartPage> {
                                     setState(() {
                                       cartList.value.remove(item);
                                       qty.remove(item);
+                                      selectedItems.remove(item);
+                                      cartList.notifyListeners();
                                     });
                                   },
                                 ),
-
                                 Text(
                                   "TOTAL: ${formatRupiah(totalItem)}",
                                   style: const TextStyle(
@@ -146,7 +199,7 @@ class _CartPageState extends State<CartPage> {
                                   ),
                                 ),
                               ],
-                            )
+                            ),
                           ],
                         ),
                       );
@@ -159,7 +212,7 @@ class _CartPageState extends State<CartPage> {
                   decoration: const BoxDecoration(
                     color: Colors.white,
                     boxShadow: [
-                      BoxShadow(color: Colors.black12, blurRadius: 5)
+                      BoxShadow(color: Colors.black12, blurRadius: 5),
                     ],
                   ),
                   child: Row(
@@ -179,15 +232,38 @@ class _CartPageState extends State<CartPage> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          final selectedProducts = cartList.value
+                              .where((item) => selectedItems[item] == true)
+                              .toList();
+
+                          if (selectedProducts.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "Pilih minimal satu produk untuk checkout",
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                "${selectedProducts.length} produk dipilih untuk checkout",
+                              ),
+                            ),
+                          );
+                        },
                         child: const Text(
                           "CHECKOUT",
                           style: TextStyle(color: Colors.white),
                         ),
-                      )
+                      ),
                     ],
                   ),
-                )
+                ),
               ],
             ),
     );

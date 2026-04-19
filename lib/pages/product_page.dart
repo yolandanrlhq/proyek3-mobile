@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
 import 'favorite_page.dart';
 import 'home_page.dart';
 import 'discount_page.dart';
@@ -19,7 +22,61 @@ class ProductPage extends StatefulWidget {
 
 class _ProductPageState extends State<ProductPage> {
   bool isAscending = true;
+  bool isLoading = true;
 
+  @override
+  void initState() {
+    super.initState();
+    fetchProducts();
+  }
+
+  Future<void> fetchProducts() async {
+  try {
+    final String baseUrl = const String.fromEnvironment(
+      'BASE_URL',
+      defaultValue: 'http://127.0.0.1:8000/api',
+    );
+
+    print('BASE URL: $baseUrl');
+
+    final response = await http.get(Uri.parse('$baseUrl/produk'));
+
+    print('STATUS: ${response.statusCode}');
+    print('BODY: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final List<dynamic> productData = data['data'] ?? [];
+
+      setState(() {
+        products = productData.map((item) => Product.fromJson(item)).toList();
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memuat data produk (${response.statusCode})'),
+        ),
+      );
+    }
+  } catch (e) {
+    print('ERROR FETCH: $e');
+
+    setState(() {
+      isLoading = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Terjadi kesalahan: $e'),
+      ),
+    );
+  }
+}
   void sortProducts() {
     setState(() {
       if (isAscending) {
@@ -306,24 +363,26 @@ class _ProductPageState extends State<ProductPage> {
           const SizedBox(height: 16),
 
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: products.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 0.75,
-              ),
-              itemBuilder: (context, index) {
-                final product = products[index];
-                return ProductCard(
-                  product: product,
-                  isFavorite: favoriteList.contains(product),
-                  onFavorite: () => toggleFavorite(product),
-                );
-              },
-            ),
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : GridView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: products.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 0.75,
+                    ),
+                    itemBuilder: (context, index) {
+                      final product = products[index];
+                      return ProductCard(
+                        product: product,
+                        isFavorite: favoriteList.contains(product),
+                        onFavorite: () => toggleFavorite(product),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -336,31 +395,22 @@ class Product {
   final int price;
   final String image;
 
-  Product({required this.name, required this.price, required this.image});
-}
+  Product({
+    required this.name,
+    required this.price,
+    required this.image,
+  });
 
-List<Product> products = [
-  Product(
-    name: "Pashmina Rayon",
-    price: 275000,
-    image: "assets/images/hijab_model.jpg",
-  ),
-  Product(
-    name: "Segi Empat Square",
-    price: 275000,
-    image: "assets/images/model_square.jpg",
-  ),
-  Product(
-    name: "Pashmina Jersey",
-    price: 275000,
-    image: "assets/images/hijab_sport.jpg",
-  ),
-  Product(
-    name: "Pashmina Viscose",
-    price: 275000,
-    image: "assets/images/viscos_hijab.jpg",
-  ),
-];
+  factory Product.fromJson(Map<String, dynamic> json) {
+    return Product(
+      name: json['name'] ?? '',
+      price: json['price'] is int
+          ? json['price']
+          : int.tryParse(json['price'].toString()) ?? 0,
+      image: json['image'] ?? '',
+    );
+  }
+}
 
 String formatRupiah(int number) {
   String result = number.toString();
@@ -409,11 +459,26 @@ class ProductCard extends StatelessWidget {
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                product.image,
-                fit: BoxFit.cover,
-                width: double.infinity,
-              ),
+              child: product.image.isNotEmpty
+                  ? Image.network(
+  product.image,
+  fit: BoxFit.cover,
+  width: double.infinity,
+  errorBuilder: (context, error, stackTrace) {
+    print('IMAGE URL ERROR: ${product.image}');
+    print('IMAGE ERROR DETAIL: $error');
+    return Container(
+      color: Colors.grey[200],
+      alignment: Alignment.center,
+      child: const Icon(Icons.broken_image),
+    );
+  },
+)
+                  : Container(
+                      color: Colors.grey[200],
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.image),
+                    ),
             ),
           ),
           Padding(

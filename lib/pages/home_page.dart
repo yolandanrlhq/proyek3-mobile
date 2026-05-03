@@ -216,24 +216,34 @@ class _HomePageState extends State<HomePage> {
               top: -10,
               child: Column(
                 children: [
-                  Container(
-                    height: 75,
-                    width: 75,
-                    decoration: BoxDecoration(
-                      color: primaryPink,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black, width: 1),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        )
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt_outlined,
-                      size: 35,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const GlowMatchScanPage(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      height: 75,
+                      width: 75,
+                      decoration: BoxDecoration(
+                        color: primaryPink,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.black, width: 1),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt_outlined,
+                        size: 35,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),

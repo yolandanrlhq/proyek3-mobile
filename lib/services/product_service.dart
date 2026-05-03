@@ -3,11 +3,11 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 
 class ProductService {
-  static String get baseUrl => AppConfig.baseUrl;
+  static String get baseUrl => AppConfig.productBaseUrl;
 
   static Future<List<dynamic>> getProducts() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/products'),
+      Uri.parse('$baseUrl/produk'),
       headers: {'Accept': 'application/json'},
     );
 

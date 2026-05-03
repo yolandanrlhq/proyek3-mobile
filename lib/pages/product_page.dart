@@ -12,6 +12,7 @@ import 'filter_by/color_page.dart';
 import 'filter_by/type_page.dart';
 import 'filter_by/price_page.dart';
 import 'filter_by/material_page.dart';
+import '../config/app_config.dart';
 
 class ProductPage extends StatefulWidget {
   const ProductPage({super.key});
@@ -35,11 +36,7 @@ class _ProductPageState extends State<ProductPage> {
 
   Future<void> fetchProducts() async {
     try {
-      final String baseUrl = const String.fromEnvironment(
-        'BASE_URL',
-        // ⚠️ kalau emulator Android pakai ini
-        defaultValue: 'http://10.0.2.2:8000/api',
-      );
+      final String baseUrl = AppConfig.productBaseUrl;
 
       final response = await http.get(Uri.parse('$baseUrl/produk'));
 
@@ -48,8 +45,7 @@ class _ProductPageState extends State<ProductPage> {
         final List<dynamic> productData = data['data'] ?? [];
 
         setState(() {
-          products =
-              productData.map((item) => Product.fromJson(item)).toList();
+          products = productData.map((item) => Product.fromJson(item)).toList();
           isLoading = false;
         });
       } else {
@@ -57,8 +53,7 @@ class _ProductPageState extends State<ProductPage> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text('Gagal memuat data produk (${response.statusCode})'),
+            content: Text('Gagal memuat data produk (${response.statusCode})'),
           ),
         );
       }

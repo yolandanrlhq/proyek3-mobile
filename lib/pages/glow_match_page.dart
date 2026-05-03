@@ -4,6 +4,8 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../services/api_service.dart';
+import '../services/product_service.dart';
 
 enum GlowMatchViewState {
   choosing,
@@ -38,8 +40,12 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
   bool _isUsingFrontCamera = true;
   String? _errorMessage;
 
-  String _resultTitle = '';
-  String _resultDescription = '';
+  String _skinToneLabel = '';
+  String _skinToneSubtitle = '';
+  List<Color> _recommendedColors = [];
+  List<String> _recommendedColorNames = []; 
+  List<dynamic> _filteredProducts = [];     
+  String _recommendedHijabImage = 'assets/images/hijab_recommendation.png';
 
   @override
   void initState() {
@@ -106,7 +112,6 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
       );
 
       _cameraController = controller;
-
       await controller.initialize();
 
       if (!mounted) return;
@@ -203,23 +208,61 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
   }
 
   Future<void> _analyzeFace() async {
-    if (_selectedXFile == null || _selectedImageBytes == null) return;
+    if (_selectedImageBytes == null) return;
 
     setState(() {
       _viewState = GlowMatchViewState.loading;
     });
 
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final result =
+          await ApiService.analyzeFaceBytes(_selectedImageBytes!);
 
-    if (!mounted) return;
+      final colors = (result['recommended_colors'] as List)
+          .map((e) => e.toString())
+          .toList();
 
+      final products = await ProductService.getProducts();
+
+      final filtered = products.where((p) {
+        final warna = (p['warna'] ?? '').toString().toLowerCase();
+
+        return colors.any((c) => warna.contains(c.toLowerCase()));
+      }).toList();
+
+      final colorObjects =
+        colors.map((c) => _mapColorNameToColor(c)).toList();
+
+      setState(() {
+        _skinToneLabel = result['skin_tone'].toString().toUpperCase();
+        _skinToneSubtitle = 'HASIL ANALISIS';
+
+        _recommendedColorNames = colors;
+        _recommendedColors = colorObjects; // 👈 INI PENTING
+        _filteredProducts = filtered;
+
+        _viewState = GlowMatchViewState.result;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _viewState = GlowMatchViewState.error;
+        _errorMessage = e.toString();
+      });
+    }
+  }
+
+  void _showAnotherRecommendation() {
     setState(() {
-      _resultTitle = 'Warm Glow Recommendation';
-      _resultDescription =
-          'Kulitmu terdeteksi cocok dengan tone warm-neutral. '
-          'Rekomendasi awal: pilih base makeup dengan undertone warm beige, '
-          'blush peach, dan highlighter gold champagne.';
-      _viewState = GlowMatchViewState.result;
+      _recommendedColors = [
+        const Color(0xFF8D6E63),
+        const Color(0xFFC48B9F),
+        const Color(0xFF7A8F57),
+        const Color(0xFF7C6CB0),
+        const Color(0xFF2F4F4F),
+        const Color(0xFFE7C18A),
+      ];
     });
   }
 
@@ -227,8 +270,9 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
     setState(() {
       _selectedXFile = null;
       _selectedImageBytes = null;
-      _resultTitle = '';
-      _resultDescription = '';
+      _skinToneLabel = '';
+      _skinToneSubtitle = '';
+      _recommendedColors = [];
       _errorMessage = null;
     });
 
@@ -239,8 +283,9 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
     setState(() {
       _selectedXFile = null;
       _selectedImageBytes = null;
-      _resultTitle = '';
-      _resultDescription = '';
+      _skinToneLabel = '';
+      _skinToneSubtitle = '';
+      _recommendedColors = [];
       _errorMessage = null;
       _viewState = GlowMatchViewState.choosing;
     });
@@ -265,18 +310,80 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
     );
   }
 
+  Widget _buildColorDot(Color color) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.black12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _mapColorNameToColor(String name) {
+    switch (name.toLowerCase()) {
+      case 'soft pink':
+        return const Color(0xFFF8BBD0);
+      case 'peach':
+        return const Color(0xFFFFCCBC);
+      case 'nude':
+        return const Color(0xFFD7A98C);
+      case 'baby blue':
+        return const Color(0xFFBBDEFB);
+      case 'dusty pink':
+        return const Color(0xFFD8A7B1);
+      case 'olive':
+        return const Color(0xFF808000);
+      case 'cream':
+        return const Color(0xFFFFFDD0);
+      case 'terracotta':
+        return const Color(0xFFE2725B);
+      case 'mocha':
+        return const Color(0xFF967969);
+      case 'maroon':
+        return const Color(0xFF800000);
+      case 'mustard':
+        return const Color(0xFFFFDB58);
+      case 'army green':
+        return const Color(0xFF4B5320);
+      case 'emerald':
+        return const Color(0xFF50C878);
+      case 'navy':
+        return const Color(0xFF000080);
+      case 'burgundy':
+        return const Color(0xFF800020);
+      case 'gold':
+        return const Color(0xFFFFD700);
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8FB),
+      backgroundColor: const Color(0xFFF4F1F1),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFFE7C1BC),
         elevation: 0,
-        foregroundColor: Colors.black87,
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Color(0xFF3A2323)),
         title: const Text(
-          'Glow Match',
-          style: TextStyle(fontWeight: FontWeight.w700),
+          'GLOW MATCH',
+          style: TextStyle(
+            color: Color(0xFF3A2323),
+            fontWeight: FontWeight.w800,
+            letterSpacing: 2,
+          ),
         ),
       ),
       body: SafeArea(
@@ -336,7 +443,7 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
           ),
           const SizedBox(height: 8),
           const Text(
-            'Ambil foto wajah langsung dari kamera live atau upload dari galeri untuk melihat rekomendasi Glow Match.',
+            'Ambil foto wajah langsung dari kamera live atau upload dari galeri untuk melihat rekomendasi warna hijab terbaik.',
             style: TextStyle(
               fontSize: 14,
               color: Colors.black54,
@@ -599,88 +706,178 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (_selectedImageBytes != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: _buildSelectedImage(height: 240),
-            ),
-          const SizedBox(height: 20),
-          Text(
-            _resultTitle,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            _resultDescription,
-            style: const TextStyle(
-              fontSize: 15,
-              color: Colors.black87,
-              height: 1.6,
-            ),
-          ),
-          const SizedBox(height: 20),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
+              color: const Color(0xFFEEDDDD),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.18),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  'Rekomendasi Awal',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(100),
+                  child: SizedBox(
+                    width: 76,
+                    height: 76,
+                    child: _buildSelectedImage(),
                   ),
                 ),
-                SizedBox(height: 10),
-                Text('• Foundation: Warm Beige / Natural Honey'),
-                Text('• Blush: Peach Coral'),
-                Text('• Lip color: Warm Nude / Rose Brown'),
-                Text('• Highlighter: Champagne Gold'),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _skinToneLabel,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.2,
+                          height: 1.3,
+                          color: Color(0xFF2D1B1B),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _skinToneSubtitle,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          letterSpacing: 1,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _backToHome,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
+          const Text(
+            'YOUR BEST-HIJAB MATCH COLOUR!',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+              color: Color(0xFF2D1B1B),
+            ),
+          ),
+          const SizedBox(height: 14),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _recommendedColors
+                  .map(
+                    (color) => Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: _buildColorDot(color),
                     ),
-                  ),
-                  child: const Text('Selesai'),
+                  )
+                  .toList(),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Center(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Image.asset(
+                _recommendedHijabImage,
+                height: 330,
+                width: 250,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(height: 28),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _showAnotherRecommendation,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEAC1BB),
+                foregroundColor: const Color(0xFF2D1B1B),
+                elevation: 5,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _retakePhoto,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.pinkAccent,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  child: const Text('Scan Lagi'),
+              child: const Text(
+                'SEE ANOTHER RECOMENDATION',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.4,
                 ),
               ),
-            ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: _backToHome,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+              child: const Text('Back to Home'),
+            ),
           ),
           const SizedBox(height: 20),
+          const SizedBox(height: 24),
+          const Text(
+            'RECOMMENDED HIJAB FOR YOU',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _filteredProducts.isEmpty
+                ? [
+                    const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text('Belum ada produk yang cocok'),
+                    )
+                  ]
+                : _filteredProducts.map((product) {
+                    return Container(
+                      width: 150,
+                      margin: const EdgeInsets.only(right: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          Image.network(
+                            product['image_url'],
+                            height: 120,
+                            fit: BoxFit.cover,
+                          ),
+                          Text(product['nama_produk']),
+                          Text(product['harga']),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+            ),
+          ),
         ],
       ),
     );

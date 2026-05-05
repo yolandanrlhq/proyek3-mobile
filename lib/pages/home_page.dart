@@ -6,7 +6,6 @@ import 'faq_page.dart';
 import 'glow_match_page.dart';
 import 'cart_page.dart';
 
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -22,7 +21,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      // --- APP BAR ---
+      // APP BAR
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -31,68 +30,27 @@ class _HomePageState extends State<HomePage> {
           height: 100,
         ),
         centerTitle: true,
-
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.shopping_cart_outlined,
-                    color: Colors.grey,
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CartPage(),
-                      ),
-                    );
-                  },
-                ),
-                ValueListenableBuilder<List<Product>>(
-                  valueListenable: cartList,
-                  builder: (context, cart, _) {
-                    if (cart.isEmpty) return const SizedBox();
-
-                    return Positioned(
-                      right: 4,
-                      top: 4,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 14,
-                          minHeight: 14,
-                        ),
-                        child: Text(
-                          '${cart.length}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
+            child: IconButton(
+              icon: const Icon(Icons.shopping_cart_outlined, color: Colors.grey),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CartPage()),
+                );
+              },
             ),
           ),
         ],
       ),
 
-      // --- BODY ---
+      // BODY
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // --- SECTION 1: BANNER ---
+            // BANNER
             Stack(
               alignment: Alignment.center,
               children: [
@@ -100,11 +58,9 @@ class _HomePageState extends State<HomePage> {
                   height: 250,
                   width: double.infinity,
                   color: Colors.grey[300],
-                  child: Center(
-                    child: Image.asset(
-                      'assets/images/banner.jpg',
-                      height: 250,
-                    ),
+                  child: Image.asset(
+                    'assets/images/banner.jpg',
+                    fit: BoxFit.cover,
                   ),
                 ),
                 Positioned(
@@ -117,15 +73,8 @@ class _HomePageState extends State<HomePage> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 12,
-                      ),
                     ),
-                    child: const Text(
-                      "SHOP NOW!",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                    child: const Text("SHOP NOW!"),
                   ),
                 ),
               ],
@@ -133,12 +82,12 @@ class _HomePageState extends State<HomePage> {
 
             const SizedBox(height: 20),
 
-            // --- SECTION 2: GLOW MATCH ---
+            // GLOW MATCH CARD
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black, width: 1),
+                  border: Border.all(color: Colors.black),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -152,17 +101,12 @@ class _HomePageState extends State<HomePage> {
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
-                              letterSpacing: 1.2,
                             ),
                           ),
                           SizedBox(height: 8),
                           Text(
                             "LET'S TRY THE GLOW MATCH FEATURE\nAND FIND THE BEST HIJAB COLOUR!",
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
                           ),
                         ],
                       ),
@@ -170,15 +114,8 @@ class _HomePageState extends State<HomePage> {
                     Container(
                       height: 150,
                       width: double.infinity,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(11),
-                          bottomRight: Radius.circular(11),
-                        ),
-                      ),
                       child: const Center(
-                        child: Text("Color Swatches & Model Image"),
+                        child: Text("Preview Glow Match"),
                       ),
                     ),
                   ],
@@ -191,12 +128,9 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
 
-      // --- BOTTOM NAVBAR ---
+      // BOTTOM NAV
       bottomNavigationBar: Container(
         height: 100,
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: Colors.black12)),
-        ),
         child: Stack(
           alignment: Alignment.topCenter,
           clipBehavior: Clip.none,
@@ -212,54 +146,64 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
+
+            // 🔥 GLOW MATCH FIXED
             Positioned(
               top: -10,
-              child: Column(
-                children: [
-                  Container(
-                    height: 75,
-                    width: 75,
-                    decoration: BoxDecoration(
-                      color: primaryPink,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black, width: 1),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        )
-                      ],
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const GlowMatchPage(),
                     ),
-                    child: const Icon(
-                      Icons.camera_alt_outlined,
-                      size: 35,
+                  );
+                },
+                child: Column(
+                  children: [
+                    Container(
+                      height: 75,
+                      width: 75,
+                      decoration: BoxDecoration(
+                        color: primaryPink,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.black),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          )
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt_outlined,
+                        size: 35,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    "GLOW MATCH",
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                    const SizedBox(height: 4),
+                    const Text(
+                      "GLOW MATCH",
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
         ),
       ),
 
-      // --- DRAWER ---
+      // DRAWER
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             const DrawerHeader(
-              decoration: BoxDecoration(
-                color: Color(0xFFF7C9C0),
-              ),
+              decoration: BoxDecoration(color: Color(0xFFF7C9C0)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -267,10 +211,7 @@ class _HomePageState extends State<HomePage> {
                   SizedBox(height: 10),
                   Text(
                     "Hara Hijabneeds",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Text("Welcome back!"),
                 ],
@@ -282,10 +223,6 @@ class _HomePageState extends State<HomePage> {
               title: const Text("Home"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
-                );
               },
             ),
 
@@ -293,10 +230,9 @@ class _HomePageState extends State<HomePage> {
               leading: const Icon(Icons.shopping_bag),
               title: const Text("Product"),
               onTap: () {
-                Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ProductPage()),
+                  MaterialPageRoute(builder: (_) => const ProductPage()),
                 );
               },
             ),
@@ -305,10 +241,9 @@ class _HomePageState extends State<HomePage> {
               leading: const Icon(Icons.discount),
               title: const Text("Discount"),
               onTap: () {
-                Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const DiscountPage()),
+                  MaterialPageRoute(builder: (_) => const DiscountPage()),
                 );
               },
             ),
@@ -317,12 +252,10 @@ class _HomePageState extends State<HomePage> {
               leading: const Icon(Icons.favorite),
               title: const Text("Favorite"),
               onTap: () {
-                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        FavoritePage(favorites: favoriteList),
+                    builder: (_) => FavoritePage(favorites: favoriteList),
                   ),
                 );
               },
@@ -332,10 +265,9 @@ class _HomePageState extends State<HomePage> {
               leading: const Icon(Icons.help_outline),
               title: const Text("FAQ"),
               onTap: () {
-                Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const FaqPage()),
+                  MaterialPageRoute(builder: (_) => const FaqPage()),
                 );
               },
             ),

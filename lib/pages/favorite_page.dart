@@ -106,9 +106,10 @@ class FavoritePage extends StatelessWidget {
           ),
         ),
       ),
-
       body: favorites.isEmpty
-          ? const Center(child: Text("Belum ada favorit"))
+          ? const Center(
+              child: Text("Belum ada favorit"),
+            )
           : Column(
               children: [
                 Expanded(
@@ -134,7 +135,7 @@ class FavoritePage extends StatelessWidget {
                               color: Colors.black12,
                               blurRadius: 6,
                               offset: Offset(2, 2),
-                            )
+                            ),
                           ],
                         ),
                         child: Padding(
@@ -145,11 +146,27 @@ class FavoritePage extends StatelessWidget {
                               Expanded(
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: Image.asset(
-                                    item.image,
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
-                                  ),
+                                  child: item.image.isNotEmpty
+                                      ? Image.network(
+                                          item.image,
+                                          width: double.infinity,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                            return Container(
+                                              color: Colors.grey[200],
+                                              alignment: Alignment.center,
+                                              child: const Icon(
+                                                Icons.broken_image,
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      : Container(
+                                          color: Colors.grey[200],
+                                          alignment: Alignment.center,
+                                          child: const Icon(Icons.image),
+                                        ),
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -169,8 +186,13 @@ class FavoritePage extends StatelessWidget {
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
+
                                   const Icon(Icons.favorite_border,
                                       color: Colors.red),
+                                  const Icon(
+                                    Icons.favorite_border,
+                                    color: Colors.red,
+                                  ),
                                 ],
                               ),
                             ],
@@ -189,7 +211,7 @@ class FavoritePage extends StatelessWidget {
                     height: 50,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.pink.shade200,
+                        backgroundColor: Colors.pinkAccent.shade100,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
@@ -206,7 +228,7 @@ class FavoritePage extends StatelessWidget {
                       ),
                     ),
                   ),
-                )
+                ),
               ],
             ),
     );

@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
 import 'favorite_page.dart';
 import 'home_page.dart';
 import 'discount_page.dart';
@@ -9,6 +12,7 @@ import 'filter_by/color_page.dart';
 import 'filter_by/type_page.dart';
 import 'filter_by/price_page.dart';
 import 'filter_by/material_page.dart';
+import '../config/app_config.dart';
 
 class ProductPage extends StatefulWidget {
   const ProductPage({super.key});
@@ -19,6 +23,48 @@ class ProductPage extends StatefulWidget {
 
 class _ProductPageState extends State<ProductPage> {
   bool isAscending = true;
+  bool isLoading = true;
+
+  // ✅ FIX UTAMA
+  List<Product> products = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchProducts();
+  }
+
+  Future<void> fetchProducts() async {
+    try {
+      final String baseUrl = AppConfig.productBaseUrl;
+
+      final response = await http.get(Uri.parse('$baseUrl/produk'));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final List<dynamic> productData = data['data'] ?? [];
+
+        setState(() {
+          products = productData.map((item) => Product.fromJson(item)).toList();
+          isLoading = false;
+        });
+      } else {
+        setState(() => isLoading = false);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memuat data produk (${response.statusCode})'),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
+      );
+    }
+  }
 
   void sortProducts() {
     setState(() {
@@ -65,7 +111,8 @@ class _ProductPageState extends State<ProductPage> {
                   SizedBox(height: 10),
                   Text(
                     "Hara Hijabneeds",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Text("Welcome back!"),
                 ],
@@ -99,7 +146,8 @@ class _ProductPageState extends State<ProductPage> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const DiscountPage()),
+                  MaterialPageRoute(
+                      builder: (context) => const DiscountPage()),
                 );
               },
             ),
@@ -112,7 +160,8 @@ class _ProductPageState extends State<ProductPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => FavoritePage(favorites: favoriteList),
+                    builder: (context) =>
+                        FavoritePage(favorites: favoriteList),
                   ),
                 );
               },
@@ -148,14 +197,13 @@ class _ProductPageState extends State<ProductPage> {
             child: Stack(
               children: [
                 IconButton(
-                  icon: const Icon(
-                    Icons.shopping_cart_outlined,
-                    color: Colors.black,
-                  ),
+                  icon: const Icon(Icons.shopping_cart_outlined,
+                      color: Colors.black),
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const CartPage()),
+                      MaterialPageRoute(
+                          builder: (context) => const CartPage()),
                     ).then((_) {
                       setState(() {});
                     });
@@ -202,128 +250,28 @@ class _ProductPageState extends State<ProductPage> {
         children: [
           const SizedBox(height: 16),
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "FILTER BY",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                      ),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          barrierColor: Colors.black.withOpacity(0.5),
-                          builder: (context) {
-                            return const FilterDialog();
-                          },
-                        );
-                      },
-                      icon: const Icon(Icons.tune, color: Colors.black),
-                      label: const Text(
-                        "View Filter",
-                        style: TextStyle(color: Colors.black),
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "SORT BY",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                      ),
-                      onPressed: () {
-                        showModalBottomSheet(
-                          context: context,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(20),
-                            ),
-                          ),
-                          builder: (context) {
-                            return Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    "SORT BY",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  ListTile(
-                                    title: const Text("Newest"),
-                                    onTap: () {
-                                      isAscending = true;
-                                      sortProducts();
-                                      Navigator.pop(context);
-                                    },
-                                  ),
-                                  ListTile(
-                                    title: const Text("Oldest"),
-                                    onTap: () {
-                                      isAscending = false;
-                                      sortProducts();
-                                      Navigator.pop(context);
-                                    },
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      },
-                      icon: const Icon(Icons.swap_vert, color: Colors.black),
-                      label: const Text(
-                        "Newest",
-                        style: TextStyle(color: Colors.black),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: products.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 0.75,
-              ),
-              itemBuilder: (context, index) {
-                final product = products[index];
-                return ProductCard(
-                  product: product,
-                  isFavorite: favoriteList.contains(product),
-                  onFavorite: () => toggleFavorite(product),
-                );
-              },
-            ),
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : GridView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: products.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 0.75,
+                    ),
+                    itemBuilder: (context, index) {
+                      final product = products[index];
+                      return ProductCard(
+                        product: product,
+                        isFavorite: favoriteList.contains(product),
+                        onFavorite: () => toggleFavorite(product),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -336,42 +284,31 @@ class Product {
   final int price;
   final String image;
 
-  Product({required this.name, required this.price, required this.image});
-}
+  Product({
+    required this.name,
+    required this.price,
+    required this.image,
+  });
 
-List<Product> products = [
-  Product(
-    name: "Pashmina Rayon",
-    price: 275000,
-    image: "assets/images/hijab_model.jpg",
-  ),
-  Product(
-    name: "Segi Empat Square",
-    price: 275000,
-    image: "assets/images/model_square.jpg",
-  ),
-  Product(
-    name: "Pashmina Jersey",
-    price: 275000,
-    image: "assets/images/hijab_sport.jpg",
-  ),
-  Product(
-    name: "Pashmina Viscose",
-    price: 275000,
-    image: "assets/images/viscos_hijab.jpg",
-  ),
-];
+  factory Product.fromJson(Map<String, dynamic> json) {
+    return Product(
+      name: json['name'] ?? '',
+      price: json['price'] is int
+          ? json['price']
+          : int.tryParse(json['price'].toString()) ?? 0,
+      image: json['image'] ?? '',
+    );
+  }
+}
 
 String formatRupiah(int number) {
   String result = number.toString();
-
   final buffer = StringBuffer();
   int counter = 0;
 
   for (int i = result.length - 1; i >= 0; i--) {
     buffer.write(result[i]);
     counter++;
-
     if (counter == 3 && i != 0) {
       buffer.write('.');
       counter = 0;
@@ -399,141 +336,26 @@ class ProductCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: Colors.white,
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(2, 2)),
-        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                product.image,
-                fit: BoxFit.cover,
-                width: double.infinity,
-              ),
+            child: Image.network(
+              product.image,
+              fit: BoxFit.cover,
+              width: double.infinity,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(product.name),
-                const SizedBox(height: 4),
-                Text(
-                  formatRupiah(product.price),
-                  style: const TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    GestureDetector(
-                      onTap: onFavorite,
-                      child: Icon(
-                        isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: isFavorite ? Colors.red : Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          Text(product.name),
+          Text(formatRupiah(product.price)),
+          IconButton(
+            icon: Icon(
+              isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: isFavorite ? Colors.red : Colors.black,
             ),
+            onPressed: onFavorite,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class FilterDialog extends StatelessWidget {
-  const FilterDialog({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              "FILTER BY:",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            _btn(context, "CATEGORY"),
-            _btn(context, "COLOR"),
-            _btn(context, "TYPE"),
-            _btn(context, "PRICE"),
-            _btn(context, "MATERIAL"),
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Close"),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _btn(BuildContext context, String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFE6D5C3),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            elevation: 0,
-          ),
-          onPressed: () {
-            Navigator.pop(context);
-
-            if (text == "CATEGORY") {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const CategoryPage()),
-              );
-            } else if (text == "COLOR") {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ColorPage()),
-              );
-            } else if (text == "TYPE") {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const TypePage()),
-              );
-            } else if (text == "PRICE") {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const PricePage()),
-              );
-            } else if (text == "MATERIAL") {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const MaterialPageFilter()),
-              );
-            }
-          },
-          child: Text(text, style: const TextStyle(color: Colors.black)),
-        ),
       ),
     );
   }

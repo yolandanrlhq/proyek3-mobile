@@ -1,4 +1,9 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'product_page.dart';
 import 'discount_page.dart';
 import 'favorite_page.dart';
@@ -8,7 +13,10 @@ import 'cart_page.dart';
 import '../services/auth_guard.dart';
 import '../services/auth_service.dart';
 import 'login_page.dart';
-
+import 'profile_page.dart';
+import '../services/auth_guard.dart';
+import '../services/auth_service.dart';
+import 'login_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,6 +28,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String userName = "Guest";
   String userEmail = "";
+  Uint8List? profileImage;
 
   @override
   void initState() {
@@ -31,11 +40,26 @@ class _HomePageState extends State<HomePage> {
     final name = await AuthService.getUserName();
     final email = await AuthService.getUserEmail();
 
+    final prefs = await SharedPreferences.getInstance();
+    final savedName = prefs.getString('name');
+    final savedEmail = prefs.getString('email');
+    final imageString = prefs.getString('profileImage');
+
     setState(() {
-      userName = name ?? "Guest";
-      userEmail = email ?? "";
+      userName = savedName ?? name ?? "Guest";
+      userEmail = savedEmail ?? email ?? "";
+
+      if (imageString != null) {
+        profileImage = base64Decode(imageString);
+      }
     });
   }
+
+  Future<void> _openProfilePage() async {
+    await AuthGuard.check(context, const ProfilePage());
+    await loadUser();
+  }
+
   @override
   Widget build(BuildContext context) {
     const Color primaryPink = Color(0xFFF7C9C0);
@@ -43,7 +67,6 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      // --- APP BAR ---
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -52,7 +75,6 @@ class _HomePageState extends State<HomePage> {
           height: 100,
         ),
         centerTitle: true,
-
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -104,11 +126,9 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
 
-      // --- BODY ---
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // --- SECTION 1: BANNER ---
             Stack(
               alignment: Alignment.center,
               children: [
@@ -149,7 +169,6 @@ class _HomePageState extends State<HomePage> {
 
             const SizedBox(height: 20),
 
-            // --- SECTION 2: GLOW MATCH ---
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Container(
@@ -207,7 +226,6 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
 
-      // --- BOTTOM NAVBAR ---
       bottomNavigationBar: Container(
         height: 100,
         decoration: const BoxDecoration(
@@ -222,9 +240,17 @@ class _HomePageState extends State<HomePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildNavIcon(Icons.home, true),
+                  _buildNavIcon(
+                    icon: Icons.home,
+                    isActive: true,
+                    onTap: () {},
+                  ),
                   const SizedBox(width: 80),
-                  _buildNavIcon(Icons.person, false),
+                  _buildNavIcon(
+                    icon: Icons.person,
+                    isActive: false,
+                    onTap: _openProfilePage,
+                  ),
                 ],
               ),
             ),
@@ -272,7 +298,6 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
 
-      // --- DRAWER ---
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -296,6 +321,20 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 12),
 
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Colors.white,
+                    backgroundImage:
+                        profileImage != null ? MemoryImage(profileImage!) : null,
+                    child: profileImage == null
+                        ? const Icon(
+                            Icons.person,
+                            size: 35,
+                            color: Colors.black,
+                          )
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
                   Text(
                     userName,
                     style: const TextStyle(
@@ -306,6 +345,7 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 4),
 
+                  const SizedBox(height: 4),
                   Text(
                     userEmail,
                     style: const TextStyle(
@@ -324,7 +364,9 @@ class _HomePageState extends State<HomePage> {
                 Navigator.pop(context);
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
+                  MaterialPageRoute(
+                    builder: (context) => const HomePage(),
+                  ),
                 );
               },
             ),
@@ -336,7 +378,9 @@ class _HomePageState extends State<HomePage> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ProductPage()),
+                  MaterialPageRoute(
+                    builder: (context) => const ProductPage(),
+                  ),
                 );
               },
             ),
@@ -348,7 +392,9 @@ class _HomePageState extends State<HomePage> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const DiscountPage()),
+                  MaterialPageRoute(
+                    builder: (context) => const DiscountPage(),
+                  ),
                 );
               },
             ),
@@ -372,7 +418,9 @@ class _HomePageState extends State<HomePage> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const FaqPage()),
+                  MaterialPageRoute(
+                    builder: (context) => const FaqPage(),
+                  ),
                 );
               },
             ),
@@ -397,14 +445,27 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildNavIcon(IconData icon, bool isActive) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7C9C0).withOpacity(isActive ? 1 : 0.5),
-        shape: BoxShape.circle,
+  Widget _buildNavIcon({
+    required IconData icon,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7C9C0).withOpacity(
+            isActive ? 1 : 0.5,
+          ),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          icon,
+          color: Colors.black,
+          size: 30,
+        ),
       ),
-      child: Icon(icon, color: Colors.black, size: 30),
     );
   }
 }

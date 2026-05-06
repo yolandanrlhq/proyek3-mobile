@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import 'home_page.dart';
-import 'register_page.dart';
 import '../services/auth_service.dart';
+import 'home_page.dart';
 
-class LoginPage extends StatelessWidget {
+class RegisterPage extends StatelessWidget {
+  final TextEditingController name = TextEditingController();
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
+  final TextEditingController confirmPassword = TextEditingController();
 
-  LoginPage({super.key});
+  RegisterPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -38,11 +39,11 @@ class LoginPage extends StatelessWidget {
                 children: [
                   Image.asset(
                     'assets/images/logo_hara.png',
-                    height: 110,
+                    height: 100,
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    "Welcome Back!",
+                    "Create Account",
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
@@ -50,39 +51,50 @@ class LoginPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    "Login dulu biar bisa akses fitur Hara",
+                    "Daftar dulu untuk menikmati semua fitur",
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey),
                   ),
                   const SizedBox(height: 28),
 
                   TextField(
-                    controller: email,
-                    decoration: InputDecoration(
-                      labelText: "Email",
-                      prefixIcon: const Icon(Icons.email_outlined),
-                      filled: true,
-                      fillColor: softPink,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        borderSide: BorderSide.none,
-                      ),
+                    controller: name,
+                    decoration: _inputDecoration(
+                      "Nama",
+                      Icons.person_outline,
+                      softPink,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
+
+                  TextField(
+                    controller: email,
+                    decoration: _inputDecoration(
+                      "Email",
+                      Icons.email_outlined,
+                      softPink,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
 
                   TextField(
                     controller: password,
                     obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: "Password",
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      filled: true,
-                      fillColor: softPink,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        borderSide: BorderSide.none,
-                      ),
+                    decoration: _inputDecoration(
+                      "Password",
+                      Icons.lock_outline,
+                      softPink,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  TextField(
+                    controller: confirmPassword,
+                    obscureText: true,
+                    decoration: _inputDecoration(
+                      "Confirm Password",
+                      Icons.lock_reset_outlined,
+                      softPink,
                     ),
                   ),
 
@@ -101,9 +113,25 @@ class LoginPage extends StatelessWidget {
                         ),
                       ),
                       onPressed: () async {
-                        final response = await ApiService.login(
+                        if (password.text != confirmPassword.text) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Password tidak sama"),
+                            ),
+                          );
+                          return;
+                        }
+
+                        final response = await ApiService.register(
+                          name: name.text,
                           email: email.text,
                           password: password.text,
+                        );
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(response['message']),
+                          ),
                         );
 
                         if (response['user'] != null) {
@@ -121,16 +149,10 @@ class LoginPage extends StatelessWidget {
                               builder: (context) => const HomePage(),
                             ),
                           );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(response['message']),
-                            ),
-                          );
                         }
                       },
                       child: const Text(
-                        "LOGIN",
+                        "REGISTER",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -140,15 +162,10 @@ class LoginPage extends StatelessWidget {
 
                   TextButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => RegisterPage(),
-                        ),
-                      );
+                      Navigator.pop(context);
                     },
                     child: const Text(
-                      "Belum punya akun? Register",
+                      "Sudah punya akun? Login",
                       style: TextStyle(
                         color: Colors.black87,
                         fontWeight: FontWeight.w600,
@@ -160,6 +177,23 @@ class LoginPage extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(
+    String label,
+    IconData icon,
+    Color fillColor,
+  ) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon),
+      filled: true,
+      fillColor: fillColor,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide.none,
       ),
     );
   }

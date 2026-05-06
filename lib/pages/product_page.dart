@@ -13,6 +13,7 @@ import 'filter_by/type_page.dart';
 import 'filter_by/price_page.dart';
 import 'filter_by/material_page.dart';
 import '../config/app_config.dart';
+import 'product_detail_page.dart';
 
 class ProductPage extends StatefulWidget {
   const ProductPage({super.key});
@@ -43,6 +44,8 @@ class _ProductPageState extends State<ProductPage> {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
         final List<dynamic> productData = data['data'] ?? [];
+        print('JUMLAH PRODUK: ${productData.length}');
+        print('CONTOH PRODUK: ${productData.isNotEmpty ? productData.first : 'kosong'}'); 
 
         setState(() {
           products = productData.map((item) => Product.fromJson(item)).toList();
@@ -261,7 +264,7 @@ class _ProductPageState extends State<ProductPage> {
                       crossAxisCount: 2,
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
-                      childAspectRatio: 0.75,
+                      childAspectRatio: 0.68,
                     ),
                     itemBuilder: (context, index) {
                       final product = products[index];
@@ -283,20 +286,41 @@ class Product {
   final String name;
   final int price;
   final String image;
+  final String kode;
+  final String kategori;
+  final String warna;
+  final String deskripsi;
+  final List<dynamic> ukurans;
+  final List<dynamic> gambars;
+
+  static String get storageBaseUrl {
+    return AppConfig.productBaseUrl.replaceAll('/api', '');
+  }
 
   Product({
     required this.name,
     required this.price,
     required this.image,
+
+    required this.kode,
+    required this.kategori,
+    required this.warna,
+    required this.deskripsi,
+    required this.ukurans,
+    required this.gambars,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       name: json['name'] ?? '',
-      price: json['price'] is int
-          ? json['price']
-          : int.tryParse(json['price'].toString()) ?? 0,
+      price: json['price'] ?? 0,
       image: json['image'] ?? '',
+      kode: json['kode_produk'] ?? '',
+      kategori: json['kategori'] ?? '',
+      warna: json['warna'] ?? '',
+      deskripsi: json['deskripsi'] ?? '',
+      ukurans: json['ukurans'] ?? [],
+      gambars: json['gambars'] ?? [],
     );
   }
 }
@@ -332,30 +356,122 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Colors.white,
-      ),
-      child: Column(
-        children: [
-          Expanded(
-            child: Image.network(
-              product.image,
-              fit: BoxFit.cover,
-              width: double.infinity,
-            ),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductDetailPage(product: product),
           ),
-          Text(product.name),
-          Text(formatRupiah(product.price)),
-          IconButton(
-            icon: Icon(
-              isFavorite ? Icons.favorite : Icons.favorite_border,
-              color: isFavorite ? Colors.red : Colors.black,
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
-            onPressed: onFavorite,
-          ),
-        ],
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: product.image.isNotEmpty
+                        ? Image.network(
+                            product.image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.broken_image, size: 42),
+                          )
+                        : const Center(
+                            child: Icon(Icons.image_not_supported, size: 42),
+                          ),
+                  ),
+
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: onFavorite,
+                      child: Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: isFavorite ? Colors.red : Colors.pink,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
+                    ),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  Text(
+                    formatRupiah(product.price),
+                    style: const TextStyle(
+                      color: Color(0xFFE75480),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEEF3),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      product.kategori,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFFE75480),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

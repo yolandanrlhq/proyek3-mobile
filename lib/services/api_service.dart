@@ -4,12 +4,14 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 
 class ApiService {
-  static String get baseUrl => AppConfig.glowMatchBaseUrl;
+  static String get glowMatchBaseUrl => AppConfig.glowMatchBaseUrl;
+
+  static String get baseUrl => AppConfig.productBaseUrl;
 
   static Future<Map<String, dynamic>> analyzeFaceBytes(
     Uint8List imageBytes,
   ) async {
-    final uri = Uri.parse('$baseUrl/analyze-face');
+    final uri = Uri.parse('$glowMatchBaseUrl/analyze-face');
 
     final request = http.MultipartRequest('POST', uri);
     request.files.add(
@@ -28,5 +30,43 @@ class ApiService {
     } else {
       throw Exception('Gagal analyze face: ${response.body}');
     }
+  }
+
+  static Future<Map<String, dynamic>> register({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/register'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'name': name,
+        'email': email,
+        'password': password,
+      }),
+    );
+
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> login({
+    required String email,
+    required String password,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/login'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+      }),
+    );
+
+    return jsonDecode(response.body);
   }
 }

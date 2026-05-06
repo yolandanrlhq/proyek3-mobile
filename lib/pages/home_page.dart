@@ -5,6 +5,9 @@ import 'favorite_page.dart';
 import 'faq_page.dart';
 import 'glow_match_page.dart';
 import 'cart_page.dart';
+import '../services/auth_guard.dart';
+import '../services/auth_service.dart';
+import 'login_page.dart';
 
 
 class HomePage extends StatefulWidget {
@@ -15,6 +18,24 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  String userName = "Guest";
+  String userEmail = "";
+
+  @override
+  void initState() {
+    super.initState();
+    loadUser();
+  }
+
+  Future<void> loadUser() async {
+    final name = await AuthService.getUserName();
+    final email = await AuthService.getUserEmail();
+
+    setState(() {
+      userName = name ?? "Guest";
+      userEmail = email ?? "";
+    });
+  }
   @override
   Widget build(BuildContext context) {
     const Color primaryPink = Color(0xFFF7C9C0);
@@ -43,12 +64,7 @@ class _HomePageState extends State<HomePage> {
                     color: Colors.grey,
                   ),
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CartPage(),
-                      ),
-                    );
+                    AuthGuard.check(context, const CartPage());
                   },
                 ),
                 ValueListenableBuilder<List<Product>>(
@@ -218,12 +234,7 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const GlowMatchScanPage(),
-                        ),
-                      );
+                      AuthGuard.check(context, const GlowMatchScanPage());
                     },
                     child: Container(
                       height: 75,
@@ -266,23 +277,42 @@ class _HomePageState extends State<HomePage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(
+            DrawerHeader(
+              decoration: const BoxDecoration(
                 color: Color(0xFFF7C9C0),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.person, size: 50),
-                  SizedBox(height: 10),
+                  const CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      Icons.person,
+                      size: 35,
+                      color: Colors.black,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
                   Text(
-                    "Hara Hijabneeds",
-                    style: TextStyle(
+                    userName,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Text("Welcome back!"),
+
+                  const SizedBox(height: 4),
+
+                  Text(
+                    userEmail,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.black54,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -328,12 +358,9 @@ class _HomePageState extends State<HomePage> {
               title: const Text("Favorite"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(
+                AuthGuard.check(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        FavoritePage(favorites: favoriteList),
-                  ),
+                  FavoritePage(favorites: favoriteList),
                 );
               },
             ),
@@ -346,6 +373,21 @@ class _HomePageState extends State<HomePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const FaqPage()),
+                );
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text("Logout"),
+              onTap: () async {
+                await AuthService.logout();
+
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LoginPage(),
+                  ),
                 );
               },
             ),

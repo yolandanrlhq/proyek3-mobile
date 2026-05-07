@@ -307,34 +307,30 @@ class _HomePageState extends State<HomePage> {
                 color: Color(0xFFF7C9C0),
               ),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.person,
-                      size: 35,
-                      color: Colors.black,
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
                   CircleAvatar(
                     radius: 28,
                     backgroundColor: Colors.white,
-                    backgroundImage:
-                        profileImage != null ? MemoryImage(profileImage!) : null,
-                    child: profileImage == null
-                        ? const Icon(
-                            Icons.person,
-                            size: 35,
-                            color: Colors.black,
+                    child: profileImage != null
+                        ? ClipOval(
+                            child: Image.memory(
+                              profileImage!,
+                              fit: BoxFit.cover,
+                              width: 56,
+                              height: 56,
+                            ),
                           )
-                        : null,
+                        : const Icon(
+                            Icons.person,
+                            size: 32,
+                            color: Colors.black,
+                          ),
                   ),
-                  const SizedBox(height: 12),
+
+                  const SizedBox(height: 10),
+
                   Text(
                     userName,
                     style: const TextStyle(
@@ -345,11 +341,11 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 4),
 
-                  const SizedBox(height: 4),
                   Text(
                     userEmail,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       color: Colors.black54,
                     ),
                   ),
@@ -431,11 +427,20 @@ class _HomePageState extends State<HomePage> {
               onTap: () async {
                 await AuthService.logout();
 
-                Navigator.pushReplacement(
+                if (!context.mounted) return;
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Berhasil logout 👋"),
+                  ),
+                );
+
+                Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => LoginPage(),
+                    builder: (context) => const HomePage(),
                   ),
+                  (route) => false,
                 );
               },
             ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'auth_check_page.dart';
+import 'home_page.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -20,7 +21,7 @@ class _SplashScreenState extends State<SplashScreen> {
         PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 800),
           pageBuilder: (context, animation, secondaryAnimation) =>
-            const AuthCheckPage(),  
+            const HomePage(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             // 🔥 Fade + Slide (kayak Shopee feel)
             final tween = Tween(

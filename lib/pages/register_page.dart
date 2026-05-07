@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import '../services/auth_service.dart';
-import 'home_page.dart';
+import 'otp_page.dart';
 
-class RegisterPage extends StatelessWidget {
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
+
+  @override
+  State<RegisterPage> createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
+  bool isLoading = false;
+
   final TextEditingController name = TextEditingController();
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
   final TextEditingController confirmPassword = TextEditingController();
-
-  RegisterPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -112,12 +118,18 @@ class RegisterPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(18),
                         ),
                       ),
-                      onPressed: () async {
+                      onPressed: isLoading ? null : () async {
+                        setState(() {
+                          isLoading = true;
+                        });
+
                         if (password.text != confirmPassword.text) {
+                          setState(() {
+                            isLoading = false;
+                          });
+
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Password tidak sama"),
-                            ),
+                            const SnackBar(content: Text("Password tidak sama")),
                           );
                           return;
                         }
@@ -128,33 +140,124 @@ class RegisterPage extends StatelessWidget {
                           password: password.text,
                         );
 
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(response['message']),
-                          ),
-                        );
+                        print(response);
+                        
+                        if (response['success'] == true) {
 
-                        if (response['user'] != null) {
-                          final user = response['user'];
+                          // popup sukses
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (_) => Dialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const CircleAvatar(
+                                      radius: 30,
+                                      backgroundColor: Color(0xFFFFF1EF),
+                                      child: Icon(
+                                        Icons.mark_email_read_rounded,
+                                        color: Colors.pink,
+                                        size: 32,
+                                      ),
+                                    ),
 
-                          await AuthService.saveSession(
-                            id: user['id'],
-                            name: user['name'],
-                            email: user['email'],
+                                    const SizedBox(height: 18),
+
+                                    const Text(
+                                      "OTP Berhasil Dikirim ✨",
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 10),
+
+                                    Text(
+                                      "Kode verifikasi sudah dikirim ke ${email.text}",
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           );
 
+                          // delay biar popup keliatan dulu
+                          await Future.delayed(const Duration(seconds: 2));
+
+                          Navigator.pop(context); // tutup dialog
+
+                          setState(() {
+                            isLoading = false;
+                          });
+
+                          if (!mounted) return;
+                          // transisi smooth
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => const HomePage(),
+                            PageRouteBuilder(
+                              transitionDuration: const Duration(milliseconds: 500),
+                              pageBuilder: (_, animation, __) => OtpPage(
+                                email: email.text,
+                              ),
+                              transitionsBuilder: (_, animation, __, child) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(1, 0),
+                                      end: Offset.zero,
+                                    ).animate(
+                                      CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOutCubic,
+                                      ),
+                                    ),
+                                    child: child,
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+
+                        } else {
+
+                          setState(() {
+                            isLoading = false;
+                          });
+
+
+                          // kalau gagal kirim otp
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(response['message'] ?? "OTP gagal dikirim"),
                             ),
                           );
                         }
                       },
-                      child: const Text(
-                        "REGISTER",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                      child: isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.black,
+                            ),
+                          )
+                        : const Text(
+                            "REGISTER",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                     ),
                   ),
 

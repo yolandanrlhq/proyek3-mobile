@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'home_page.dart';
+import 'login_page.dart';
 
 class AuthCheckPage extends StatefulWidget {
   const AuthCheckPage({super.key});
@@ -24,7 +25,7 @@ class _AuthCheckPageState extends State<AuthCheckPage> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => const HomePage(),
+        builder: (context) => isLogin ? const HomePage() : LoginPage(),
       ),
     );
   }

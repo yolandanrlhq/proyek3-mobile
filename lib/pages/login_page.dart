@@ -50,7 +50,7 @@ class LoginPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    "Login dulu biar bisa akses fitur Hara",
+                    "Login untuk akses semua fitur Hara",
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey),
                   ),

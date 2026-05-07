@@ -41,6 +41,7 @@ class ApiService {
       Uri.parse('$baseUrl/register'),
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: jsonEncode({
         'name': name,
@@ -60,10 +61,30 @@ class ApiService {
       Uri.parse('$baseUrl/login'),
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: jsonEncode({
         'email': email,
         'password': password,
+      }),
+    );
+
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> verifyOtp({
+    required String email,
+    required String otpCode,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/verify-otp'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({
+        'email': email,
+        'otp_code': otpCode,
       }),
     );
 

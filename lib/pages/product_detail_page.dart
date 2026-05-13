@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'product_page.dart';
 import 'cart_page.dart';
+import 'checkout_page.dart';
 
 class ProductDetailPage extends StatelessWidget {
   final Product product;
 
-  const ProductDetailPage({super.key, required this.product});
+  const ProductDetailPage({
+    super.key,
+    required this.product,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -39,21 +43,27 @@ class ProductDetailPage extends StatelessWidget {
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text("${product.name} ditambahkan ke keranjang"),
+                    content: Text(
+                      "${product.name} ditambahkan ke keranjang",
+                    ),
                     duration: const Duration(seconds: 1),
                   ),
                 );
 
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const CartPage()),
+                  MaterialPageRoute(
+                    builder: (_) => const CartPage(),
+                  ),
                 );
               },
               child: Container(
                 width: 54,
                 height: 48,
                 decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFFE75480)),
+                  border: Border.all(
+                    color: const Color(0xFFE75480),
+                  ),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(
@@ -71,25 +81,24 @@ class ProductDetailPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => Scaffold(
-                        appBar: AppBar(
-                          title: const Text("Checkout"),
-                          backgroundColor: Colors.pink[100],
-                        ),
-                        body: const Center(
-                          child: Text(
-                            "Ini halaman checkout sementara ya 😆",
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ),
-                      ),
+                     builder: (_) => CheckoutPage(
+  products: [product],
+  quantities: Map<Product, int>.from({
+    product: 1,
+  }),
+  allSelectedProducts: [product],
+),
+            
                     ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFE75480),
                   foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 48),
+                  minimumSize: const Size(
+                    double.infinity,
+                    48,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -116,13 +125,17 @@ class ProductDetailPage extends StatelessWidget {
               height: 280,
               child: product.gambars.isNotEmpty
                   ? PageView(
-                      children: product.gambars.map<Widget>((img) {
+                      children:
+                          product.gambars.map<Widget>((img) {
                         return Image.network(
                           img.toString(),
                           fit: BoxFit.cover,
                           width: double.infinity,
                           errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.broken_image, size: 60),
+                              const Icon(
+                            Icons.broken_image,
+                            size: 60,
+                          ),
                         );
                       }).toList(),
                     )
@@ -132,17 +145,24 @@ class ProductDetailPage extends StatelessWidget {
                           fit: BoxFit.cover,
                           width: double.infinity,
                           errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.broken_image, size: 60),
+                              const Icon(
+                            Icons.broken_image,
+                            size: 60,
+                          ),
                         )
                       : const Center(
-                          child: Icon(Icons.image_not_supported, size: 60),
+                          child: Icon(
+                            Icons.image_not_supported,
+                            size: 60,
+                          ),
                         ),
             ),
 
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
                 children: [
                   Text(
                     product.name,
@@ -167,7 +187,9 @@ class ProductDetailPage extends StatelessWidget {
 
                   Text(
                     "Kode: ${product.kode}",
-                    style: const TextStyle(color: Colors.grey),
+                    style: const TextStyle(
+                      color: Colors.grey,
+                    ),
                   ),
 
                   const SizedBox(height: 16),
@@ -180,7 +202,9 @@ class ProductDetailPage extends StatelessWidget {
                           value: product.kategori,
                         ),
                       ),
+
                       const SizedBox(width: 10),
+
                       Expanded(
                         child: _InfoBox(
                           title: "Warna",
@@ -204,18 +228,28 @@ class ProductDetailPage extends StatelessWidget {
 
                   if (product.ukurans.isNotEmpty)
                     Column(
-                      children: product.ukurans.map<Widget>((u) {
+                      children:
+                          product.ukurans.map<Widget>((u) {
                         return Container(
                           width: double.infinity,
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(
+                            bottom: 8,
+                          ),
+                          padding:
+                              const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFEEF3),
-                            borderRadius: BorderRadius.circular(14),
+                            color:
+                                const Color(0xFFFFEEF3),
+                            borderRadius:
+                                BorderRadius.circular(
+                              14,
+                            ),
                           ),
                           child: Text(
                             "${u['ukuran']} - Stok: ${u['stok']} - ${formatRupiah(int.tryParse(u['harga'].toString()) ?? 0)}",
-                            style: const TextStyle(fontSize: 13),
+                            style: const TextStyle(
+                              fontSize: 13,
+                            ),
                           ),
                         );
                       }).toList(),
@@ -270,7 +304,8 @@ class _InfoBox extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
           Text(
             title,
@@ -279,7 +314,9 @@ class _InfoBox extends StatelessWidget {
               fontSize: 12,
             ),
           ),
+
           const SizedBox(height: 4),
+
           Text(
             value.isNotEmpty ? value : "-",
             style: const TextStyle(

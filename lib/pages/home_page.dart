@@ -1,22 +1,16 @@
 import 'dart:convert';
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'product_page.dart';
 import 'discount_page.dart';
 import 'favorite_page.dart';
-import 'faq_page.dart';
 import 'glow_match_page.dart';
 import 'cart_page.dart';
-import '../services/auth_guard.dart';
-import '../services/auth_service.dart';
-import 'login_page.dart';
 import 'profile_page.dart';
 import '../services/auth_guard.dart';
 import '../services/auth_service.dart';
-import 'login_page.dart';
+import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -26,6 +20,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   String userName = "Guest";
   String userEmail = "";
   Uint8List? profileImage;
@@ -60,11 +56,21 @@ class _HomePageState extends State<HomePage> {
     await loadUser();
   }
 
+Future<void> _openSettingsPage() async {
+  await AuthGuard.check(
+    context,
+    const SettingsPage(),
+  );
+
+  await loadUser();
+}
+
   @override
   Widget build(BuildContext context) {
     const Color primaryPink = Color(0xFFF7C9C0);
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: Colors.white,
 
       appBar: AppBar(
@@ -140,13 +146,21 @@ class _HomePageState extends State<HomePage> {
                     child: Image.asset(
                       'assets/images/banner.jpg',
                       height: 250,
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
                 Positioned(
                   bottom: 20,
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ProductPage(),
+                        ),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFDE4E0),
                       foregroundColor: Colors.black,
@@ -170,7 +184,7 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 20),
 
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Container(
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.black, width: 1),
@@ -179,7 +193,7 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   children: [
                     const Padding(
-                      padding: EdgeInsets.all(16.0),
+                      padding: EdgeInsets.all(16),
                       child: Column(
                         children: [
                           Text(
@@ -242,25 +256,27 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   _buildNavIcon(
                     icon: Icons.home,
-                    isActive: true,
                     onTap: () {},
                   ),
                   const SizedBox(width: 80),
                   _buildNavIcon(
-                    icon: Icons.person,
-                    isActive: false,
-                    onTap: _openProfilePage,
+                    icon: Icons.settings,
+                    onTap: _openSettingsPage,
                   ),
                 ],
               ),
             ),
+
             Positioned(
               top: -10,
               child: Column(
                 children: [
                   GestureDetector(
                     onTap: () {
-                      AuthGuard.check(context, const GlowMatchScanPage());
+                      AuthGuard.check(
+                        context,
+                        const GlowMatchScanPage(),
+                      );
                     },
                     child: Container(
                       height: 75,
@@ -268,7 +284,10 @@ class _HomePageState extends State<HomePage> {
                       decoration: BoxDecoration(
                         color: primaryPink,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.black, width: 1),
+                        border: Border.all(
+                          color: Colors.black,
+                          width: 1,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.1),
@@ -299,6 +318,7 @@ class _HomePageState extends State<HomePage> {
       ),
 
       drawer: Drawer(
+        backgroundColor: const Color(0xFFFFF8F7),
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
@@ -308,139 +328,98 @@ class _HomePageState extends State<HomePage> {
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.white,
-                    child: profileImage != null
-                        ? ClipOval(
-                            child: Image.memory(
-                              profileImage!,
-                              fit: BoxFit.cover,
-                              width: 56,
-                              height: 56,
+                  GestureDetector(
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await _openProfilePage();
+                    },
+                    child: CircleAvatar(
+                      radius: 34,
+                      backgroundColor: Colors.white,
+                      child: profileImage != null
+                          ? ClipOval(
+                              child: Image.memory(
+                                profileImage!,
+                                fit: BoxFit.cover,
+                                width: 68,
+                                height: 68,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.person,
+                              size: 38,
+                              color: Colors.black,
                             ),
-                          )
-                        : const Icon(
-                            Icons.person,
-                            size: 32,
-                            color: Colors.black,
-                          ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  Text(
-                    userName,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
-
-                  const SizedBox(height: 4),
-
-                  Text(
-                    userEmail,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
+                  const SizedBox(height: 14),
+                  const Text(
+                    "Welcome to",
+                    style: TextStyle(
+                      fontSize: 13,
                       color: Colors.black54,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    "Hara Hijabneeds",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
             ),
 
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text("Home"),
+            _buildDrawerItem(
+              icon: Icons.home,
+              title: "Home",
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const HomePage(),
-                  ),
-                );
               },
             ),
 
-            ListTile(
-              leading: const Icon(Icons.shopping_bag),
-              title: const Text("Product"),
+            _buildDrawerItem(
+              icon: Icons.shopping_bag,
+              title: "Product",
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const ProductPage(),
+                    builder: (_) => const ProductPage(),
                   ),
                 );
               },
             ),
 
-            ListTile(
-              leading: const Icon(Icons.discount),
-              title: const Text("Discount"),
+            _buildDrawerItem(
+              icon: Icons.discount,
+              title: "Discount",
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const DiscountPage(),
+                    builder: (_) => const DiscountPage(),
                   ),
                 );
               },
             ),
 
-            ListTile(
-              leading: const Icon(Icons.favorite),
-              title: const Text("Favorite"),
+            _buildDrawerItem(
+              icon: Icons.favorite,
+              title: "Favorite",
               onTap: () {
                 Navigator.pop(context);
                 AuthGuard.check(
                   context,
                   FavoritePage(favorites: favoriteList),
-                );
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.help_outline),
-              title: const Text("FAQ"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const FaqPage(),
-                  ),
-                );
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text("Logout"),
-              onTap: () async {
-                await AuthService.logout();
-
-                if (!context.mounted) return;
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Berhasil logout 👋"),
-                  ),
-                );
-
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const HomePage(),
-                  ),
-                  (route) => false,
                 );
               },
             ),
@@ -452,17 +431,14 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildNavIcon({
     required IconData icon,
-    required bool isActive,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF7C9C0).withOpacity(
-            isActive ? 1 : 0.5,
-          ),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF7C9C0),
           shape: BoxShape.circle,
         ),
         child: Icon(
@@ -471,6 +447,27 @@ class _HomePageState extends State<HomePage> {
           size: 30,
         ),
       ),
+    );
+  }
+
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: Colors.black54,
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.w500,
+          color: Colors.black87,
+        ),
+      ),
+      onTap: onTap,
     );
   }
 }

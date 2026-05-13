@@ -1,114 +1,55 @@
 import 'package:flutter/material.dart';
 import 'product_page.dart';
-import 'cart_page.dart';
-import 'home_page.dart';
-import 'discount_page.dart';
-import 'faq_page.dart';
+import 'app_drawer.dart';
 
 class FavoritePage extends StatelessWidget {
   final List<Product> favorites;
 
-  const FavoritePage({super.key, required this.favorites});
+  const FavoritePage({
+    super.key,
+    required this.favorites,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFFF8F7),
 
-      // 🔥 DRAWER BARU
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Color(0xFFF7C9C0)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.person, size: 50),
-                  SizedBox(height: 10),
-                  Text(
-                    "Hara Hijabneeds",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Text("Welcome back!"),
-                ],
-              ),
-            ),
+drawer: const AppDrawer(currentPage: "Favorite"),
 
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text("Home"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const HomePage()),
-                );
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.shopping_bag),
-              title: const Text("Product"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProductPage()),
-                );
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.discount),
-              title: const Text("Discount"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const DiscountPage()),
-                );
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.favorite),
-              title: const Text("Favorite"),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.help_outline),
-              title: const Text("FAQ"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const FaqPage()),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-
-      // 🔥 APPBAR DITAMBAH MENU
       appBar: AppBar(
-        title: Text("My Wishlist (${favorites.length} items)"),
+        backgroundColor: const Color(0xFFF7C9C0),
+        elevation: 0,
         centerTitle: true,
 
         leading: Builder(
           builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
+            icon: const Icon(
+              Icons.menu,
+              color: Colors.black87,
+            ),
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
+
+        title: Text(
+          "My Wishlist (${favorites.length} items)",
+          style: const TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
+
       body: favorites.isEmpty
           ? const Center(
-              child: Text("Belum ada favorit"),
+              child: Text(
+                "Belum ada favorit",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black54,
+                ),
+              ),
             )
           : Column(
               children: [
@@ -128,34 +69,41 @@ class FavoritePage extends StatelessWidget {
 
                       return Container(
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(20),
                           color: Colors.white,
-                          boxShadow: const [
+                          boxShadow: [
                             BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 6,
-                              offset: Offset(2, 2),
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
                             ),
                           ],
                         ),
+
                         child: Padding(
                           padding: const EdgeInsets.all(10),
+
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
                             children: [
                               Expanded(
                                 child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius:
+                                      BorderRadius.circular(14),
+
                                   child: item.image.isNotEmpty
                                       ? Image.network(
                                           item.image,
                                           width: double.infinity,
                                           fit: BoxFit.cover,
+
                                           errorBuilder:
-                                              (context, error, stackTrace) {
+                                              (_, __, ___) {
                                             return Container(
                                               color: Colors.grey[200],
-                                              alignment: Alignment.center,
+                                              alignment:
+                                                  Alignment.center,
                                               child: const Icon(
                                                 Icons.broken_image,
                                               ),
@@ -164,33 +112,46 @@ class FavoritePage extends StatelessWidget {
                                         )
                                       : Container(
                                           color: Colors.grey[200],
-                                          alignment: Alignment.center,
-                                          child: const Icon(Icons.image),
+                                          alignment:
+                                              Alignment.center,
+                                          child: const Icon(
+                                            Icons.image,
+                                          ),
                                         ),
                                 ),
                               ),
-                              const SizedBox(height: 8),
+
+                              const SizedBox(height: 10),
+
                               Text(
                                 item.name,
-                                style: const TextStyle(fontSize: 14),
+                                maxLines: 2,
+                                overflow:
+                                    TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                              const SizedBox(height: 4),
+
+                              const SizedBox(height: 6),
+
                               Row(
                                 mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                    MainAxisAlignment
+                                        .spaceBetween,
                                 children: [
                                   Text(
                                     formatRupiah(item.price),
                                     style: const TextStyle(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.bold,
+                                      color: Colors.pink,
+                                      fontWeight:
+                                          FontWeight.bold,
                                     ),
                                   ),
 
-                                  const Icon(Icons.favorite_border,
-                                      color: Colors.red),
                                   const Icon(
-                                    Icons.favorite_border,
+                                    Icons.favorite,
                                     color: Colors.red,
                                   ),
                                 ],
@@ -203,34 +164,90 @@ class FavoritePage extends StatelessWidget {
                   ),
                 ),
 
-                // tombol bawah
                 Padding(
                   padding: const EdgeInsets.all(16),
+
                   child: SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: 52,
+
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.pinkAccent.shade100,
+                        backgroundColor:
+                            const Color(0xFFF7C9C0),
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                          borderRadius:
+                              BorderRadius.circular(30),
                         ),
                       ),
+
                       onPressed: () {
                         cartList.value.addAll(favorites);
                         cartList.notifyListeners();
 
-                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              "All items moved to cart 🛒",
+                            ),
+                          ),
+                        );
                       },
+
                       child: const Text(
                         "MOVE ALL TO CART",
-                        style: TextStyle(color: Colors.black),
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildDrawerItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Widget page,
+    bool isCurrentPage = false,
+  }) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isCurrentPage
+            ? Colors.black87
+            : Colors.black54,
+      ),
+
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: isCurrentPage
+              ? FontWeight.bold
+              : FontWeight.w500,
+          color: Colors.black87,
+        ),
+      ),
+
+      onTap: () {
+        Navigator.pop(context);
+
+        if (isCurrentPage) return;
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => page,
+          ),
+        );
+      },
     );
   }
 }

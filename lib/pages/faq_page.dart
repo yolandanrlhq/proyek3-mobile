@@ -5,6 +5,7 @@ import 'home_page.dart';
 import 'product_page.dart';
 import 'discount_page.dart';
 import 'favorite_page.dart';
+import 'settings_page.dart';
 
 class FaqPage extends StatelessWidget {
   const FaqPage({super.key});
@@ -97,31 +98,32 @@ class FaqPage extends StatelessWidget {
         ),
       ),
 
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF8C8C0),
-        elevation: 0,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.black54),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+  appBar: AppBar(
+  backgroundColor: const Color(0xFFF7C9C0),
+  elevation: 0,
+  centerTitle: true,
+  leading: IconButton(
+    icon: const Icon(
+      Icons.arrow_back,
+      color: Colors.black87,
+    ),
+    onPressed: () {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const SettingsPage(),
         ),
-        title: const Text(
-          "FaQ",
-          style: TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black54),
-            onPressed: () {},
-          ),
-        ],
-      ),
+      );
+    },
+  ),
+  title: const Text(
+    "FaQ",
+    style: TextStyle(
+      color: Colors.black87,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+),
 
       body: SingleChildScrollView(
         child: Column(

@@ -1,59 +1,24 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import 'home_page.dart';
 import 'product_page.dart';
 import 'discount_page.dart';
 import 'favorite_page.dart';
-import 'faq_page.dart';
-import 'home_page.dart';
+import 'profile_page.dart';
+import '../services/auth_guard.dart';
 
-class AppDrawer extends StatefulWidget {
-  const AppDrawer({super.key});
+class AppDrawer extends StatelessWidget {
+  final String currentPage;
 
-  @override
-  State<AppDrawer> createState() => _AppDrawerState();
-}
-
-class _AppDrawerState extends State<AppDrawer> {
-  String name = "Hara Hijabneeds User";
-  Uint8List? profileImage;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProfile();
-  }
-
-  Future<void> _loadProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    final imageString = prefs.getString('profileImage');
-
-    setState(() {
-      name = prefs.getString('name') ?? "Hara Hijabneeds User";
-
-      if (imageString != null) {
-        profileImage = base64Decode(imageString);
-      }
-    });
-  }
-
-  void _goTo(BuildContext context, Widget page) {
-    Navigator.pop(context);
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => page,
-      ),
-    );
-  }
+  const AppDrawer({
+    super.key,
+    required this.currentPage,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Drawer(
+      backgroundColor: const Color(0xFFFFF8F7),
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -62,71 +27,103 @@ class _AppDrawerState extends State<AppDrawer> {
               color: Color(0xFFF7C9C0),
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: Colors.white,
-                  backgroundImage: profileImage != null
-                      ? MemoryImage(profileImage!)
-                      : null,
-                  child: profileImage == null
-                      ? const Icon(
-                          Icons.person,
-                          size: 35,
-                          color: Colors.black87,
-                        )
-                      : null,
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    AuthGuard.check(context, const ProfilePage());
+                  },
+                  child: const CircleAvatar(
+                    radius: 34,
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      Icons.person,
+                      size: 38,
+                      color: Colors.black,
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 18,
+                const SizedBox(height: 14),
+                const Text(
+                  "Welcome to",
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.black54,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  "Hara Hijabneeds",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: Colors.black87,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const Text("Welcome back!"),
               ],
             ),
           ),
-
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text("Home"),
-            onTap: () => _goTo(context, const HomePage()),
+          _item(
+            context,
+            icon: Icons.home,
+            title: "Home",
+            page: const HomePage(),
           ),
-
-          ListTile(
-            leading: const Icon(Icons.shopping_bag),
-            title: const Text("Product"),
-            onTap: () => _goTo(context, const ProductPage()),
+          _item(
+            context,
+            icon: Icons.shopping_bag,
+            title: "Product",
+            page: const ProductPage(),
           ),
-
-          ListTile(
-            leading: const Icon(Icons.discount),
-            title: const Text("Discount"),
-            onTap: () => _goTo(context, const DiscountPage()),
+          _item(
+            context,
+            icon: Icons.discount,
+            title: "Discount",
+            page: const DiscountPage(),
           ),
-
-          ListTile(
-            leading: const Icon(Icons.favorite),
-            title: const Text("Favorite"),
-            onTap: () {
-              _goTo(
-                context,
-                FavoritePage(favorites: favoriteList),
-              );
-            },
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.help_outline),
-            title: const Text("FAQ"),
-            onTap: () => _goTo(context, const FaqPage()),
+          _item(
+            context,
+            icon: Icons.favorite,
+            title: "Favorite",
+            page: FavoritePage(favorites: favoriteList),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _item(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Widget page,
+  }) {
+    final bool active = currentPage == title;
+
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: active ? Colors.black87 : Colors.black54,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: active ? FontWeight.bold : FontWeight.w500,
+          color: Colors.black87,
+        ),
+      ),
+      onTap: () {
+        Navigator.pop(context);
+        if (active) return;
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => page),
+        );
+      },
     );
   }
 }

@@ -24,10 +24,19 @@ class _ProductPageState extends State<ProductPage> {
   }
 
   Future<void> fetchProducts() async {
+    print('BASE URL = ${AppConfig.productBaseUrl}');
+    print('REQUEST URL = ${AppConfig.productBaseUrl}/produk');
+
     try {
       final response = await http.get(
         Uri.parse('${AppConfig.productBaseUrl}/produk'),
+        headers: {
+          'Accept': 'application/json',
+        },
       );
+
+      print('STATUS CODE = ${response.statusCode}');
+      print('BODY = ${response.body}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -41,6 +50,7 @@ class _ProductPageState extends State<ProductPage> {
         setState(() => isLoading = false);
       }
     } catch (e) {
+      print('ERROR FETCH PRODUCT = $e');
       setState(() => isLoading = false);
     }
   }

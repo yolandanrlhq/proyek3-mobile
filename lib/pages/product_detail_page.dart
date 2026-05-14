@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'product_page.dart';
 import 'cart_page.dart';
 import 'checkout_page.dart';
+import '../config/app_config.dart';
 
 class ProductDetailPage extends StatelessWidget {
   final Product product;
@@ -81,13 +82,13 @@ class ProductDetailPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                     builder: (_) => CheckoutPage(
-  products: [product],
-  quantities: Map<Product, int>.from({
-    product: 1,
-  }),
-  allSelectedProducts: [product],
-),
+                    builder: (_) => CheckoutPage(
+                      products: [product],
+                      quantities: Map<Product, int>.from({
+                        product: 1,
+                      }),
+                      allSelectedProducts: [product],
+                    ),
             
                     ),
                   );
@@ -127,21 +128,25 @@ class ProductDetailPage extends StatelessWidget {
                   ? PageView(
                       children:
                           product.gambars.map<Widget>((img) {
-                        return Image.network(
-                          img.toString(),
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          errorBuilder: (_, __, ___) =>
-                              const Icon(
-                            Icons.broken_image,
-                            size: 60,
-                          ),
-                        );
+                          return Image.network(
+                            getImageUrl(img.toString()),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (_, error, stackTrace) {
+                              debugPrint("GAMBAR ERROR: $error");
+                              debugPrint("URL GAMBAR: ${getImageUrl(img.toString())}");
+
+                              return const Icon(
+                                Icons.broken_image,
+                                size: 60,
+                              );
+                            },
+                          );
                       }).toList(),
                     )
                   : product.image.isNotEmpty
                       ? Image.network(
-                          product.image,
+                          getImageUrl(product.image),
                           fit: BoxFit.cover,
                           width: double.infinity,
                           errorBuilder: (_, __, ___) =>
@@ -149,7 +154,7 @@ class ProductDetailPage extends StatelessWidget {
                             Icons.broken_image,
                             size: 60,
                           ),
-                        )
+                      )
                       : const Center(
                           child: Icon(
                             Icons.image_not_supported,

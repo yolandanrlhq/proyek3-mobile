@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'otp_page.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import '../services/auth_service.dart';
+import 'home_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -262,6 +265,65 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
 
                   const SizedBox(height: 14),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.g_mobiledata, size: 30),
+                      label: const Text(
+                        "Login dengan Google",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.black87,
+                        side: const BorderSide(color: Color(0xFFF7C9C0)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                      onPressed: () async {
+                        try {
+                          final googleSignIn = GoogleSignIn.instance;
+
+                          final account = await googleSignIn.authenticate();
+
+                          final response = await ApiService.loginWithGoogle(
+                            name: account.displayName ?? 'Google User',
+                            email: account.email,
+                            googleId: account.id,
+                          );
+
+                          if (response['user'] != null) {
+                            final user = response['user'];
+
+                            await AuthService.saveSession(
+                              id: user['id'],
+                              name: user['name'],
+                              email: user['email'],
+                            );
+
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const HomePage(),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(response['message'] ?? 'Login Google gagal'),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Google login error: $e')),
+                          );
+                        }
+                      },
+                    ),
+                  ),
 
                   TextButton(
                     onPressed: () {

@@ -16,8 +16,8 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   String name = "Hara Hijabneeds User";
   String email = "user@hara-hijabneeds.com";
-  String phone = "+62 881-4556-388";
-  String address = "Bandung, Indonesia";
+  String phone = "";
+  String address = "";
 
   Uint8List? profileImage;
 
@@ -31,8 +31,8 @@ class _ProfilePageState extends State<ProfilePage> {
     final prefs = await SharedPreferences.getInstance();
 
     setState(() {
-      name = prefs.getString('name') ?? name;
-      email = prefs.getString('email') ?? email;
+      name = prefs.getString('userName') ?? name;
+      email = prefs.getString('userEmail') ?? email;
       phone = prefs.getString('phone') ?? phone;
       address = prefs.getString('address') ?? address;
 
@@ -194,13 +194,13 @@ class _ProfilePageState extends State<ProfilePage> {
             _buildProfileItem(
               icon: Icons.phone_outlined,
               title: "Nomor Telepon",
-              value: phone,
+              value: phone.isEmpty ? "Belum ditambahkan" : phone,
             ),
 
             _buildProfileItem(
               icon: Icons.location_on_outlined,
               title: "Alamat",
-              value: address,
+              value: address.isEmpty ? "Belum ditambahkan" : address,
             ),
 
             const SizedBox(height: 24),

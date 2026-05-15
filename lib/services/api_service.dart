@@ -90,4 +90,25 @@ class ApiService {
 
     return jsonDecode(response.body);
   }
+
+  static Future<Map<String, dynamic>> loginWithGoogle({
+    required String name,
+    required String email,
+    required String googleId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/google-login'),
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'name': name,
+        'email': email,
+        'google_id': googleId,
+      }),
+    );
+
+    return jsonDecode(response.body);
+  }
 }

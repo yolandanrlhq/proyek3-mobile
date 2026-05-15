@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "507101633813",
+    "project_id": "hara-hijab",
+    "storage_bucket": "hara-hijab.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:507101633813:android:63b2c5310f852854735d1c",
+        "android_client_info": {
+          "package_name": "com.example.app_hara"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "507101633813-l7nkitc06j8a5vqlg9fves6r9k2ukk6f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.app_hara",
+            "certificate_hash": "f5960c2d1854439c296059dce21894638b6fda13"
+          }
+        },
+        {
+          "client_id": "507101633813-u46gdgk41ctudjipmbfed4psighe5f2m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDrxr40hj3sXUCnJA_2nXgmTjqGv-bQh_Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "507101633813-u46gdgk41ctudjipmbfed4psighe5f2m.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

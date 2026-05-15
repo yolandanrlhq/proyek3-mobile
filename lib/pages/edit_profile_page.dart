@@ -162,6 +162,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               label: 'Email',
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
+              readOnly: true,
             ),
 
             const SizedBox(height: 16),
@@ -218,9 +219,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
+    bool readOnly = false,
   }) {
     return TextField(
       controller: controller,
+      readOnly: readOnly,
       keyboardType: keyboardType,
       maxLines: maxLines,
       decoration: InputDecoration(

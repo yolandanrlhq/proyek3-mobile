@@ -1,10 +1,11 @@
-// payment_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import 'product_page.dart';
 import 'cart_page.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../config/app_config.dart';
 
 class PaymentPage extends StatefulWidget {
   final List<Product> products;
@@ -79,18 +80,57 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   Future<void> continuePayment() async {
+  final prefs = await SharedPreferences.getInstance();
+  final userId = prefs.getInt('userId');
 
-    setState(() {
-      paymentSuccess = true;
-    });
+  if (userId == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("User belum login"),
+      ),
+    );
+    return;
+  }
 
-    await Future.delayed(
-      const Duration(seconds: 2),
+  for (final product in widget.products) {
+    final qty = widget.quantities[product] ?? 1;
+
+    final response = await http.post(
+      Uri.parse('${AppConfig.productBaseUrl}/penjualan'),
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'id_produk': product.kode,
+        'id_pelanggan': userId,
+        'jumlah': qty,
+        'harga': product.price,
+        'total': product.price * qty,
+        'status': 'Dalam Proses',
+        'metode': selectedMethod,
+      }),
     );
 
-    final userName = "Customer";
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Gagal menyimpan penjualan"),
+        ),
+      );
+      return;
+    }
+  }
 
-    final message = '''
+  setState(() {
+    paymentSuccess = true;
+  });
+
+  await Future.delayed(const Duration(seconds: 2));
+
+  final userName = "Customer";
+
+  final message = '''
 ╔══════════════════╗
       HARA HIJABNEEDS
 ╚══════════════════╝
@@ -120,9 +160,8 @@ untuk menyelesaikan transaksi.
 
 Terima kasih 🤍
 ''';
-
     final Uri url = Uri.parse(
-      "https://wa.me/6288145563888?text=${Uri.encodeComponent(message)}",
+      "https://wa.me/6285321163909?text=${Uri.encodeComponent(message)}",
     );
 
     await launchUrl(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'faq_page.dart';
 import '../services/auth_service.dart';
 import 'login_page.dart';
+import 'home_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -137,10 +138,23 @@ class _SettingsPageState extends State<SettingsPage> {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => LoginPage(),
+                  builder: (_) => const HomePage(),
                 ),
                 (route) => false,
               );
+
+              Future.delayed(const Duration(milliseconds: 300), () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    backgroundColor: Colors.black87,
+                    behavior: SnackBarBehavior.floating,
+                    content: Text(
+                      "Anda berhasil logout",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                );
+              });
             },
           ),
         ],

@@ -111,4 +111,20 @@ class ApiService {
 
     return jsonDecode(response.body);
   }
+
+  static Future<Map<String, dynamic>> resendOtp({
+    required String email,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/resend-otp'),
+      headers: {
+        'Accept': 'application/json',
+      },
+      body: {
+        'email': email,
+      },
+    );
+
+    return jsonDecode(response.body);
+  }
 }

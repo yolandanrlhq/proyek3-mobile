@@ -17,6 +17,7 @@ class _CartPageState extends State<CartPage> {
   void initState() {
     super.initState();
     syncCartData();
+    showCartBadge.value = false;
   }
 
   int getTotalPrice() {

@@ -5,6 +5,8 @@ import 'app_drawer.dart';
 import 'cart_page.dart';
 import '../config/app_config.dart';
 import 'product_detail_page.dart';
+import 'login_page.dart';
+import '../services/auth_service.dart';
 
 class ProductPage extends StatefulWidget {
   const ProductPage({super.key});
@@ -90,18 +92,60 @@ class _ProductPageState extends State<ProductPage> {
         ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.shopping_cart_outlined,
-              color: Colors.black87,
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const CartPage(),
-                ),
-              ).then((_) => setState(() {}));
+          ValueListenableBuilder<bool>(
+            valueListenable: showCartBadge,
+            builder: (context, showBadge, _) {
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.shopping_cart_outlined),
+                    onPressed: () async {
+                      final loggedIn = await AuthService.isLoggedIn();
+
+                      if (!loggedIn) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LoginPage(),
+                          ),
+                        );
+                        return;
+                      }
+
+                      showCartBadge.value = false;
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CartPage(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  if (showBadge)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Text(
+                          "1",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
             },
           ),
         ],
@@ -150,17 +194,15 @@ class _ProductPageState extends State<ProductPage> {
         ),
       ),
       onTap: () {
-        Navigator.pop(context);
-
-        if (isCurrentPage) return;
+        showCartBadge.value = false;
 
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => page,
+            builder: (_) => const CartPage(),
           ),
         );
-      },
+      }
     );
   }
 }
@@ -354,3 +396,4 @@ class ProductCard extends StatelessWidget {
 
 List<Product> favoriteList = [];
 ValueNotifier<List<Product>> cartList = ValueNotifier([]);
+ValueNotifier<bool> showCartBadge = ValueNotifier(false);

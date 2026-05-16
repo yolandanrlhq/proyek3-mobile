@@ -269,22 +269,25 @@ class _RegisterPageState extends State<RegisterPage> {
                   SizedBox(
                     width: double.infinity,
                     height: 52,
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.g_mobiledata, size: 30),
-                      label: const Text(
-                        "Login dengan Google",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                    child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.black87,
-                        side: const BorderSide(color: Color(0xFFF7C9C0)),
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(
+                          color: Color(0xFFF7C9C0),
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),
                       ),
+
                       onPressed: () async {
                         try {
                           final googleSignIn = GoogleSignIn.instance;
+
+                          await googleSignIn.initialize(
+                            serverClientId: "507101633813-u46gdgk41ctudjipmbfed4psighe5f2m.apps.googleusercontent.com",
+                          );
 
                           final account = await googleSignIn.authenticate();
 
@@ -312,16 +315,46 @@ class _RegisterPageState extends State<RegisterPage> {
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(response['message'] ?? 'Login Google gagal'),
+                                content: Text(
+                                  response['message'] ?? 'Login Google gagal',
+                                ),
                               ),
                             );
                           }
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Google login error: $e')),
+                            SnackBar(
+                              content: Text('Google login error: $e'),
+                            ),
                           );
                         }
                       },
+
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset(
+                            'assets/icons/google.png',
+                            height: 22,
+                            width: 22,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.login, size: 22);
+                            },
+                          ),
+                          const SizedBox(width: 10),
+                          const Flexible(
+                            child: Text(
+                              "Continue with Google",
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
 

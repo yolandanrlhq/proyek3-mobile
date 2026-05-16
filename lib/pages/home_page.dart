@@ -33,20 +33,31 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> loadUser() async {
+    final isLogin = await AuthService.isLoggedIn();
+
+    if (!isLogin) {
+      setState(() {
+        userName = "Guest";
+        userEmail = "";
+        profileImage = null;
+      });
+      return;
+    }
+
     final name = await AuthService.getUserName();
     final email = await AuthService.getUserEmail();
 
     final prefs = await SharedPreferences.getInstance();
-    final savedName = prefs.getString('name');
-    final savedEmail = prefs.getString('email');
     final imageString = prefs.getString('profileImage');
 
     setState(() {
-      userName = savedName ?? name ?? "Guest";
-      userEmail = savedEmail ?? email ?? "";
+      userName = name ?? "Guest";
+      userEmail = email ?? "";
 
       if (imageString != null) {
         profileImage = base64Decode(imageString);
+      } else {
+        profileImage = null;
       }
     });
   }
@@ -353,25 +364,52 @@ Future<void> _openSettingsPage() async {
                             ),
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  const Text(
-                    "Welcome to",
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.black54,
-                      fontWeight: FontWeight.w500,
+                  const SizedBox(height: 10),
+                  
+                  if (userName == "Guest" || userEmail.isEmpty) ...[
+                    const Text(
+                      "Welcome to",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    "Hara Hijabneeds",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.black87,
-                      fontWeight: FontWeight.bold,
+                    const SizedBox(height: 4),
+                    const Text(
+                      "Hara Hijabneeds",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
+                  ] else ...[
+                    Text(
+                      userName,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      userEmail,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -1,4 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 
 class AuthService {
   static Future<void> saveSession({
@@ -19,6 +21,47 @@ class AuthService {
     return prefs.getBool('isLoggedIn') ?? false;
   }
 
+  static Future<bool> validateSession() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final isLogin = prefs.getBool('isLoggedIn') ?? false;
+    final userId = prefs.getInt('userId');
+    final userEmail = prefs.getString('userEmail');
+
+    print('LOCAL isLogin: $isLogin');
+    print('LOCAL userId: $userId');
+    print('LOCAL email: $userEmail');
+
+    if (!isLogin || userId == null || userEmail == null) {
+      await logout();
+      return false;
+    }
+
+    try {
+      final url = Uri.parse(
+        '${AppConfig.productBaseUrl}/check-user/$userId?email=$userEmail',
+      );
+
+      print('CHECK URL: $url');
+
+      final response = await http.get(url);
+
+      print('STATUS CODE: ${response.statusCode}');
+      print('BODY: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return true;
+      }
+
+      await logout();
+      return false;
+    } catch (e) {
+      print('VALIDATE ERROR: $e');
+      await logout();
+      return false;
+    }
+  }
+
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -26,6 +69,8 @@ class AuthService {
     await prefs.remove('userId');
     await prefs.remove('userName');
     await prefs.remove('userEmail');
+    await prefs.remove('profileImage');
+    await prefs.clear();
   }
 
   static Future<String?> getUserName() async {

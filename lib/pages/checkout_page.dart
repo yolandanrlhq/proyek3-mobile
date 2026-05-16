@@ -116,6 +116,19 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
+  void cancelDiscount() {
+    setState(() {
+      isDiscountApplied = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Discount dibatalkan"),
+        backgroundColor: Color(0xFFF8C8C0),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -440,12 +453,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   ),
 
                   onPressed: isDiscountApplied
-                      ? null
+                      ? cancelDiscount
                       : applyDiscount,
 
                   child: Text(
                     isDiscountApplied
-                        ? "Used"
+                        ? "Cancel"
                         : "Apply",
                     style: const TextStyle(
                       color: Colors.black87,

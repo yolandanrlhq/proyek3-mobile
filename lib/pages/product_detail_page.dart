@@ -3,6 +3,8 @@ import 'product_page.dart';
 import 'cart_page.dart';
 import 'checkout_page.dart';
 import '../config/app_config.dart';
+import '../services/auth_service.dart';
+import 'login_page.dart';
 
 class ProductDetailPage extends StatelessWidget {
   final Product product;
@@ -18,6 +20,64 @@ class ProductDetailPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(product.name),
         backgroundColor: Colors.pink[100],
+        actions: [
+          ValueListenableBuilder<bool>(
+            valueListenable: showCartBadge,
+            builder: (context, showBadge, _) {
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.shopping_cart_outlined),
+                    onPressed: () async {
+                      final loggedIn = await AuthService.isLoggedIn();
+
+                      if (!loggedIn) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LoginPage(),
+                          ),
+                        );
+                        return;
+                      }
+
+                      showCartBadge.value = false;
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CartPage(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  if (showBadge)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Text(
+                          "1",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
 
       bottomNavigationBar: Container(
@@ -35,26 +95,36 @@ class ProductDetailPage extends StatelessWidget {
         child: Row(
           children: [
             InkWell(
-              onTap: () {
+              onTap: () async {
+                final isLoggedIn = await AuthService.isLoggedIn();
+
+                if (!isLoggedIn) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Silakan login dulu untuk menambahkan ke keranjang"),
+                    ),
+                  );
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => LoginPage(),
+                    ),
+                  );
+
+                  return;
+                }
+
                 if (!cartList.value.contains(product)) {
                   cartList.value = [...cartList.value, product];
-                } else {
-                  cartList.notifyListeners();
                 }
+
+                showCartBadge.value = true;
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      "${product.name} ditambahkan ke keranjang",
-                    ),
+                    content: Text("${product.name} ditambahkan ke keranjang"),
                     duration: const Duration(seconds: 1),
-                  ),
-                );
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const CartPage(),
                   ),
                 );
               },
@@ -78,18 +148,36 @@ class ProductDetailPage extends StatelessWidget {
 
             Expanded(
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
+                  final loggedIn = await AuthService.isLoggedIn();
+
+                  if (!loggedIn) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Silakan login dulu untuk checkout"),
+                      ),
+                    );
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LoginPage(),
+                      ),
+                    );
+
+                    return;
+                  }
+
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                    builder: (_) => CheckoutPage(
-                      products: [product],
-                      quantities: Map<Product, int>.from({
-                        product: 1,
-                      }),
-                      allSelectedProducts: [product],
-                    ),
-            
+                      builder: (_) => CheckoutPage(
+                        products: [product],
+                        quantities: Map<Product, int>.from({
+                          product: 1,
+                        }),
+                        allSelectedProducts: [product],
+                      ),
                     ),
                   );
                 },

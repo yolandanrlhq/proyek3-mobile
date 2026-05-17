@@ -48,15 +48,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final prefs = await SharedPreferences.getInstance();
 
     setState(() {
-      userName =
-          prefs.getString('name') ?? "User";
+      userName = prefs.getString('userName') ??
+          prefs.getString('name') ??
+          "User";
 
-      userPhone =
-          prefs.getString('phone') ?? "-";
+      userPhone = prefs.getString('phone') ??
+          prefs.getString('no_telepon') ??
+          "-";
 
-      userAddress =
-          prefs.getString('address') ??
-              "Alamat belum tersedia";
+      userAddress = prefs.getString('address') ??
+          prefs.getString('alamat') ??
+          "Alamat belum tersedia";
     });
   }
 
@@ -236,7 +238,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           const SizedBox(height: 14),
 
           const Text(
-            "Estimated delivery: 1-2 Jun",
+            "Admin akan mengonfirmasi ongkir dan estimasi pengiriman melalui WhatsApp.",
             style: TextStyle(
               fontSize: 11,
               color: Colors.grey,
@@ -328,10 +330,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
                 const SizedBox(height: 16),
 
-                const Text(
-                  "Color: White\nSize: S",
-
-                  style: TextStyle(
+                Text(
+                  "Color: ${item.warna}\nSize: ${selectedSizeCart[item.kode] ?? '-'}",
+                  style: const TextStyle(
                     letterSpacing: 1,
                     color: Color(0xFF3A2A25),
                   ),
@@ -550,6 +551,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
           ),
 
           onPressed: () {
+            final hasEmptySize = widget.products.any(
+              (item) => selectedSizeCart[item.kode] == null,
+            );
+
+            if (hasEmptySize) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Ada produk yang belum memilih ukuran"),
+                ),
+              );
+              return;
+            }
 
             Navigator.push(
               context,

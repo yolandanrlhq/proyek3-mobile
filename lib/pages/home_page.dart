@@ -1,22 +1,18 @@
 import 'dart:convert';
 import 'dart:typed_data';
-
-import 'package:audioplayers/audioplayers.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'product_page.dart';
 import 'discount_page.dart';
 import 'favorite_page.dart';
 import 'glow_match_page.dart';
 import 'cart_page.dart';
 import 'profile_page.dart';
-
 import '../services/auth_guard.dart';
 import '../services/auth_service.dart';
-
 import 'settings_page.dart';
+import 'app_drawer.dart';
+import 'order_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -28,14 +24,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  final AudioPlayer _audioPlayer = AudioPlayer();
-
-  final List<String> bannerImages = [
-    'assets/images/banner.jpg',
-    'assets/images/gambar_home.jpeg',
-    'assets/images/home.jpeg',
-  ];
-
   String userName = "Guest";
   String userEmail = "";
   Uint8List? profileImage;
@@ -43,169 +31,22 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-
     loadUser();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await playMusic();
-      showDiscountPopup();
-    });
+    loadInitialData();
   }
 
-  Future<void> playMusic() async {
-    try {
-      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      await _audioPlayer.setVolume(0.2);
+  Future<void> loadInitialData() async {
+    await loadCartAndFavorite();
+    await loadOrders();
 
-      await _audioPlayer.play(
-        AssetSource('music/audio_hara.mp3'),
-      );
-
-      debugPrint("Audio berhasil diputar");
-    } catch (e) {
-      debugPrint("ERROR AUDIO: $e");
-    }
-  }
-
-  Future<void> stopMusic() async {
-    try {
-      await _audioPlayer.stop();
-      debugPrint("Audio dihentikan");
-    } catch (e) {
-      debugPrint("ERROR STOP AUDIO: $e");
-    }
-  }
-
-  void showDiscountPopup() {
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (!mounted) return;
-
-      showDialog(
-        context: context,
-        barrierColor: Colors.black.withOpacity(0.25),
-        builder: (context) {
-          return Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(horizontal: 45),
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF8F7),
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.pink.withOpacity(0.2),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: const Icon(
-                        Icons.close,
-                        size: 20,
-                        color: Colors.black45,
-                      ),
-                    ),
-                  ),
-
-                  Container(
-                    height: 58,
-                    width: 58,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF7C9C0),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.local_offer_rounded,
-                      color: Colors.black87,
-                      size: 30,
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  const Text(
-                    "🎀 Special Promo!",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  const Text(
-                    "Claim diskon 10% untuk belanja hijab favoritmu hari ini!",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.black54,
-                      height: 1.4,
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  ElevatedButton(
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      await stopMusic();
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const DiscountPage(),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF7C9C0),
-                      foregroundColor: Colors.black87,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 10,
-                      ),
-                    ),
-                    child: const Text(
-                      "CLAIM NOW",
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-    });
-  }
-
-  @override
-  void dispose() {
-    _audioPlayer.stop();
-    _audioPlayer.dispose();
-    super.dispose();
+    if (!mounted) return;
+    setState(() {});
   }
 
   Future<void> loadUser() async {
-    final isLogin = await AuthService.isLoggedIn();
+    final isValid = await AuthService.validateSession();
 
-    if (!isLogin) {
+    if (!isValid) {
       setState(() {
         userName = "Guest";
         userEmail = "";
@@ -224,7 +65,7 @@ class _HomePageState extends State<HomePage> {
       userName = name ?? "Guest";
       userEmail = email ?? "";
 
-      if (imageString != null) {
+      if (imageString != null && imageString.isNotEmpty) {
         profileImage = base64Decode(imageString);
       } else {
         profileImage = null;
@@ -233,21 +74,18 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _openProfilePage() async {
-    await stopMusic();
     await AuthGuard.check(context, const ProfilePage());
     await loadUser();
   }
 
-  Future<void> _openSettingsPage() async {
-    await stopMusic();
+Future<void> _openSettingsPage() async {
+  await AuthGuard.check(
+    context,
+    const SettingsPage(),
+  );
 
-    await AuthGuard.check(
-      context,
-      const SettingsPage(),
-    );
-
-    await loadUser();
-  }
+  await loadUser();
+}
 
   @override
   Widget build(BuildContext context) {
@@ -268,54 +106,49 @@ class _HomePageState extends State<HomePage> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.shopping_cart_outlined,
-                    color: Colors.grey,
-                  ),
-                  onPressed: () async {
-                    await stopMusic();
+            child: ValueListenableBuilder<int>(
+              valueListenable: unreadCartCount,
+              builder: (context, count, _) {
+                return Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.shopping_cart_outlined,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () {
+                        unreadCartCount.value = 0;
 
-                    AuthGuard.check(
-                      context,
-                      const CartPage(),
-                    );
-                  },
-                ),
-                ValueListenableBuilder<List<Product>>(
-                  valueListenable: cartList,
-                  builder: (context, cart, _) {
-                    if (cart.isEmpty) return const SizedBox();
+                        AuthGuard.check(
+                          context,
+                          const CartPage(),
+                        );
+                      },
+                    ),
 
-                    return Positioned(
-                      right: 4,
-                      top: 4,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 14,
-                          minHeight: 14,
-                        ),
-                        child: Text(
-                          '${cart.length}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
+                    if (count > 0)
+                      Positioned(
+                        right: 4,
+                        top: 4,
+                        child: Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
                           ),
-                          textAlign: TextAlign.center,
+                          child: Text(
+                            '$count',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
-                    );
-                  },
-                ),
-              ],
+                  ],
+                );
+              },
             ),
           ),
         ],
@@ -324,75 +157,25 @@ class _HomePageState extends State<HomePage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-
-            /// SLIDESHOW BANNER
             Stack(
               alignment: Alignment.center,
               children: [
-                SizedBox(
+                Container(
                   height: 250,
                   width: double.infinity,
-                  child: CarouselSlider(
-                    options: CarouselOptions(
+                  color: Colors.grey[300],
+                  child: Center(
+                    child: Image.asset(
+                      'assets/images/banner.jpg',
                       height: 250,
-                      viewportFraction: 1,
-                      autoPlay: true,
-                      autoPlayInterval: const Duration(seconds: 4),
-                      enlargeCenterPage: false,
+                      fit: BoxFit.cover,
                     ),
-                    items: bannerImages.map((image) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 10,
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.18),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 6),
-                                    ),
-                                  ],
-                                ),
-                                child: Image.asset(
-                                  image,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-
-                              Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      Colors.black.withOpacity(0.08),
-                                      Colors.black.withOpacity(0.45),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
                   ),
                 ),
-
                 Positioned(
                   bottom: 20,
                   child: ElevatedButton(
-                    onPressed: () async {
-                      await stopMusic();
-
+                    onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -413,9 +196,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     child: const Text(
                       "SHOP NOW!",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -424,96 +205,58 @@ class _HomePageState extends State<HomePage> {
 
             const SizedBox(height: 20),
 
-            /// GLOW MATCH INFO CARD
-Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 16),
-  child: Container(
-    width: double.infinity,
-    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [Color(0xFFFFF8F7), Color(0xFFFDE4E0)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      borderRadius: BorderRadius.circular(28),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.pink.withOpacity(0.08),
-          blurRadius: 16,
-          offset: const Offset(0, 8),
-        ),
-      ],
-    ),
-    child: Column(
-      children: [
-        const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.auto_awesome, color: Color(0xFFF37B7B), size: 18),
-            SizedBox(width: 8),
-            Text(
-              "FACE GLOW INSTANTLY!",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                letterSpacing: 0.8,
-                color: Colors.black87,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          "Discover the perfect hijab colour\nfor your skin tone glow 💖",
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.black54,
-            height: 1.5,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 18),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildColorDot(const Color(0xFFE6A4A4)),
-            _buildColorDot(const Color(0xFFD9B08C)),
-            _buildColorDot(const Color(0xFFC8B6A6)),
-            _buildColorDot(const Color(0xFFBFA2DB)),
-            _buildColorDot(const Color(0xFFF7C9C0)),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.camera_alt_outlined, size: 16, color: Colors.black54),
-              SizedBox(width: 8),
-              Text(
-                "Tap the camera button below to begin",
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.black54,
-                  fontWeight: FontWeight.w500,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.black, width: 1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Text(
+                            "FACE GLOW INSTANTLY!",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            "LET'S TRY THE GLOW MATCH FEATURE\nAND FIND THE BEST HIJAB COLOUR!",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      height: 150,
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(11),
+                          bottomRight: Radius.circular(11),
+                        ),
+                      ),
+                      child: const Center(
+                        child: Text("Color Swatches & Model Image"),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  ),
-),
+            ),
 
-const SizedBox(height: 30),
             const SizedBox(height: 30),
           ],
         ),
@@ -537,9 +280,7 @@ const SizedBox(height: 30),
                     icon: Icons.home,
                     onTap: () {},
                   ),
-
                   const SizedBox(width: 80),
-
                   _buildNavIcon(
                     icon: Icons.settings,
                     onTap: _openSettingsPage,
@@ -553,9 +294,7 @@ const SizedBox(height: 30),
               child: Column(
                 children: [
                   GestureDetector(
-                    onTap: () async {
-                      await stopMusic();
-
+                    onTap: () {
                       AuthGuard.check(
                         context,
                         const GlowMatchScanPage(),
@@ -585,9 +324,7 @@ const SizedBox(height: 30),
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 4),
-
                   const Text(
                     "GLOW MATCH",
                     style: TextStyle(
@@ -602,181 +339,8 @@ const SizedBox(height: 30),
         ),
       ),
 
-      drawer: Drawer(
-        backgroundColor: const Color(0xFFFFF8F7),
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
+    drawer: const AppDrawer(currentPage: "Home"),
 
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                color: Color(0xFFF7C9C0),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-
-                  GestureDetector(
-                    onTap: () async {
-                      Navigator.pop(context);
-                      await _openProfilePage();
-                    },
-                    child: CircleAvatar(
-                      radius: 34,
-                      backgroundColor: Colors.white,
-                      child: profileImage != null
-                          ? ClipOval(
-                              child: Image.memory(
-                                profileImage!,
-                                fit: BoxFit.cover,
-                                width: 68,
-                                height: 68,
-                              ),
-                            )
-                          : const Icon(
-                              Icons.person,
-                              size: 38,
-                              color: Colors.black,
-                            ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  if (userName == "Guest" || userEmail.isEmpty) ...[
-                    const Text(
-                      "Welcome to",
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    const Text(
-                      "Hara Hijabneeds",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ] else ...[
-                    Text(
-                      userName,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    Text(
-                      userEmail,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            _buildDrawerItem(
-              icon: Icons.home,
-              title: "Home",
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-
-            _buildDrawerItem(
-              icon: Icons.shopping_bag,
-              title: "Product",
-              onTap: () async {
-                await stopMusic();
-
-                Navigator.pop(context);
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ProductPage(),
-                  ),
-                );
-              },
-            ),
-
-            _buildDrawerItem(
-              icon: Icons.discount,
-              title: "Discount",
-              onTap: () async {
-                await stopMusic();
-
-                Navigator.pop(context);
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const DiscountPage(),
-                  ),
-                );
-              },
-            ),
-
-            _buildDrawerItem(
-              icon: Icons.favorite,
-              title: "Favorite",
-              onTap: () async {
-                await stopMusic();
-
-                Navigator.pop(context);
-
-                AuthGuard.check(
-                  context,
-                  FavoritePage(favorites: favoriteList),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildColorDot(Color color) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      height: 16,
-      width: 16,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: Colors.white,
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
     );
   }
 

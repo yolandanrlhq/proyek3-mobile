@@ -6,6 +6,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
+import 'order_model.dart';
+import 'order_receipt_page.dart';
+import 'order_status_page.dart';
 
 class PaymentPage extends StatefulWidget {
   final List<Product> products;
@@ -28,31 +31,31 @@ class _PaymentPageState extends State<PaymentPage> {
   String selectedMethod = "Delivery";
 
   bool paymentSuccess = false;
+  bool isEditingAddress = false;
 
-  final TextEditingController fullAddressController =
-      TextEditingController(
-    text: "Karangbaru, Muara Dua, Lhokseumawe",
-  );
+  final TextEditingController fullAddressController = TextEditingController();
+  final TextEditingController mapsController = TextEditingController();
+  final TextEditingController notesController = TextEditingController();
 
-  final TextEditingController houseNoController =
-      TextEditingController(
-    text: "No. 12",
-  );
+  @override
+  void initState() {
+    super.initState();
+    loadUserAddress();
+  }
 
-  final TextEditingController mapsController =
-      TextEditingController(
-    text: "https://maps.google.com/",
-  );
+  Future<void> loadUserAddress() async {
+    final prefs = await SharedPreferences.getInstance();
 
-  final TextEditingController notesController =
-      TextEditingController(
-    text: "Dekat toko utama",
-  );
-
+    fullAddressController.text =
+        prefs.getString('address') ??
+        prefs.getString('alamat') ??
+        "";
+    mapsController.text = "";
+    notesController.text = "";
+  }
   @override
   void dispose() {
     fullAddressController.dispose();
-    houseNoController.dispose();
     mapsController.dispose();
     notesController.dispose();
     super.dispose();
@@ -92,6 +95,16 @@ class _PaymentPageState extends State<PaymentPage> {
     return;
   }
 
+  if (selectedMethod == "Delivery" &&
+      fullAddressController.text.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Alamat pengiriman wajib diisi"),
+      ),
+    );
+    return;
+  }
+
   for (final product in widget.products) {
     final qty = widget.quantities[product] ?? 1;
 
@@ -122,52 +135,93 @@ class _PaymentPageState extends State<PaymentPage> {
     }
   }
 
-  setState(() {
-    paymentSuccess = true;
-  });
+  final userName = prefs.getString('userName') ??
+    prefs.getString('name') ??
+    "Customer";
 
-  await Future.delayed(const Duration(seconds: 2));
+  final userPhone = prefs.getString('phone') ??
+      prefs.getString('no_telepon') ??
+      "-";
 
-  final userName = "Customer";
+  final userAddress = fullAddressController.text.isNotEmpty
+    ? fullAddressController.text
+    : "Alamat belum diisi";
 
   final message = '''
-╔══════════════════╗
-      HARA HIJABNEEDS
-╚══════════════════╝
+  Halo Admin Hara Hijabneeds, saya ingin melakukan pemesanan.
 
-🧾 *DETAIL PESANAN*
+  *DATA PEMESAN*
+  Nama: $userName
+  No. HP: $userPhone
+  Metode: $selectedMethod
 
-👤 Nama:
-$userName
+  *ALAMAT / CATATAN*
+  Alamat: $userAddress
+  Maps: ${mapsController.text.isNotEmpty ? mapsController.text : "-"}
+  Catatan: ${notesController.text.isNotEmpty ? notesController.text : "-"}
 
-📍 Pengiriman:
-$selectedMethod
+  *DETAIL PRODUK*
+  ${widget.products.map((e) {
+    final qty = widget.quantities[e] ?? 1;
+    return '- ${e.name} x$qty = ${formatRupiah(e.price * qty)}';
+  }).join('\n')}
 
-━━━━━━━━━━━━━━━━━━
-🛍 Produk:
-${widget.products.map((e) => '• ${e.name} x${widget.quantities[e]}').join('\n')}
+  *TOTAL PEMBAYARAN*
+  ${formatRupiah(widget.totalPayment)}
 
-💰 Subtotal:
-${formatRupiah(subtotal)}
-
-━━━━━━━━━━━━━━━━━━
-💳 *TOTAL BAYAR*
-${formatRupiah(widget.totalPayment)}
-━━━━━━━━━━━━━━━━━━
-
-🔐 Mohon kirim kode pembayaran
-untuk menyelesaikan transaksi.
-
-Terima kasih 🤍
-''';
+  Mohon konfirmasi ongkir, estimasi pengiriman, dan instruksi pembayaran ya. Terima kasih.
+  ''';
     final Uri url = Uri.parse(
       "https://wa.me/6285321163909?text=${Uri.encodeComponent(message)}",
+    );
+
+    final order = OrderModel(
+      orderCode: "HARA-${DateTime.now().millisecondsSinceEpoch}",
+      products: widget.products,
+      quantities: widget.quantities.map(
+        (key, value) => MapEntry(key.kode, value),
+      ),
+      totalPayment: widget.totalPayment,
+      customerName: userName,
+      customerPhone: userPhone,
+      customerAddress: userAddress,
+      method: selectedMethod,
+      status: "Menunggu Konfirmasi Admin",
+      createdAt: DateTime.now(),
+    );
+
+    orderList.add(order);
+
+    final orderPrefs = await SharedPreferences.getInstance();
+
+    await orderPrefs.setString(
+      'orderList',
+      jsonEncode(
+        orderList.map((e) => e.toJson()).toList(),
+      ),
     );
 
     await launchUrl(
       url,
       mode: LaunchMode.externalApplication,
     );
+      
+    for (final item in widget.products) {
+      selectedSizeCart.remove(item.kode);
+    }
+
+    cartList.value = cartList.value
+        .where((item) => !widget.products.contains(item))
+        .toList();
+
+    cartList.notifyListeners();
+    await saveCartAndFavorite();
+
+    if (!mounted) return;
+
+    setState(() {
+      paymentSuccess = true;
+    });
   }
 
   @override
@@ -274,7 +328,7 @@ Terima kasih 🤍
                 },
 
                 child: Text(
-                  "CONTINUE PAYMENT",
+                  "BUAT PESANAN",
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight:
@@ -414,11 +468,6 @@ Terima kasih 🤍
           ),
 
           _addressField(
-            houseNoController,
-            Icons.list_alt,
-          ),
-
-          _addressField(
             mapsController,
             Icons.map,
           ),
@@ -432,27 +481,25 @@ Terima kasih 🤍
 
           Align(
             alignment: Alignment.centerRight,
-
-            child: Container(
-              width: 90,
-              height: 36,
-
-              decoration: BoxDecoration(
-                color:
-                    const Color(0xFFF5C8C3),
-
-                borderRadius:
-                    BorderRadius.circular(20),
-              ),
-
-              alignment: Alignment.center,
-
-              child: const Text(
-                "EDIT",
-
-                style: TextStyle(
-                  fontWeight:
-                      FontWeight.bold,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  isEditingAddress = !isEditingAddress;
+                });
+              },
+              child: Container(
+                width: 90,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5C8C3),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  isEditingAddress ? "SAVE" : "EDIT",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -466,35 +513,25 @@ Terima kasih 🤍
     TextEditingController controller,
     IconData icon,
   ) {
-
     return Container(
       height: 46,
-
-      margin:
-          const EdgeInsets.only(bottom: 10),
-
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        border: Border.all(
-          color: Colors.black26,
-        ),
+        border: Border.all(color: Colors.black26),
       ),
-
       child: TextField(
         controller: controller,
-
+        readOnly: !isEditingAddress,
         decoration: InputDecoration(
           border: InputBorder.none,
-
-          contentPadding:
-              const EdgeInsets.symmetric(
+          contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 12,
           ),
-
           suffixIcon: Icon(
             icon,
             size: 20,
-            color: Colors.grey,
+            color: isEditingAddress ? Colors.black54 : Colors.grey,
           ),
         ),
       ),
@@ -630,7 +667,13 @@ Terima kasih 🤍
           ),
 
           onPressed: () {
-            Navigator.pop(context);
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const ProductPage(),
+              ),
+              (route) => false,
+            );
           },
         ),
       ),
@@ -671,7 +714,7 @@ Terima kasih 🤍
               const SizedBox(height: 30),
 
               const Text(
-  "ORDER CREATED!",
+                "ORDER CREATED!",
 
                 textAlign: TextAlign.center,
 
@@ -685,7 +728,7 @@ Terima kasih 🤍
               const SizedBox(height: 14),
 
               const Text(
-                "Your payment has been processed.\nPlease wait while we confirm your order.",
+                "Pesanan berhasil dibuat.\nAdmin akan menghubungi kamu melalui WhatsApp.",
 
                 textAlign: TextAlign.center,
 
@@ -699,19 +742,46 @@ Terima kasih 🤍
               const SizedBox(height: 30),
 
               Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.center,
-
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-
                   _dot(false),
                   _dot(true),
                   _dot(false),
                 ],
               ),
+
+              const SizedBox(height: 26),
+
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const OrderStatusPage(),
+                    ),
+                  );
+                },
+                child: const Text("Lihat Status Pesanan"),
+              ),
+
+              const SizedBox(height: 10),
+
+              TextButton(
+                onPressed: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ProductPage(),
+                    ),
+                    (route) => false,
+                  );
+                },
+                child: const Text("Kembali ke Katalog"),
+              ),
+
             ],
-          ),
-        ),
+          ),        
+        )
       ),
     );
   }

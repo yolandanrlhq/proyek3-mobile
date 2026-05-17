@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
 import '../services/product_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'glow_match_product_page.dart';
 
 enum GlowMatchViewState {
   choosing,
@@ -14,6 +16,70 @@ enum GlowMatchViewState {
   loading,
   result,
   error,
+}
+
+List<String> _getProductColorsBySkinTone(String skinTone) {
+  final tone = skinTone.toLowerCase();
+
+  if (tone.contains('putih')) {
+    return [
+      'Black',
+      'Navy',
+      'Soft Yellow',
+      'Dusty Pink',
+      'Sky Blue',
+    ];
+  }
+
+  if (tone.contains('kuning') || tone.contains('langsat')) {
+    return [
+      'Coral',
+      'Peach',
+      'Sky Blue',
+      'Soft Yellow',
+      'Dusty Pink',
+      'Black',
+      'Ivory',
+    ];
+  }
+
+  if (tone.contains('sawo') || tone.contains('matang')) {
+    return [
+      'Ivory',
+      'Biscuit',
+      'Latte',
+      'Taupe',
+      'Dusty Pink',
+      'Sky Blue',
+      'Coral',
+      'Peach',
+      'Golden Brown',
+      'Dark Brown',
+      'Navy',
+      'Black',
+    ];
+  }
+
+  if (tone.contains('gelap')) {
+    return [
+      'Soft Yellow',
+      'Sky Blue',
+      'Dusty Pink',
+      'Ivory',
+      'Pearl',
+      'Coral',
+      'Peach',
+    ];
+  }
+
+  return [
+    'Ivory',
+    'Dusty Pink',
+    'Sky Blue',
+    'Peach',
+    'Black',
+    'Navy',
+  ];
 }
 
 class GlowMatchScanPage extends StatefulWidget {
@@ -40,6 +106,9 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
   bool _isUsingFrontCamera = true;
   String? _errorMessage;
 
+  List<dynamic> _history = [];
+  bool _isLoadingHistory = false;
+
   String _skinToneLabel = '';
   String _skinToneSubtitle = '';
   List<Color> _recommendedColors = [];
@@ -51,6 +120,58 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loadGlowMatchHistory();
+  }
+
+  Future<void> _loadGlowMatchHistory() async {
+    try {
+      setState(() {
+        _isLoadingHistory = true;
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('userId') ?? 0;
+
+      if (userId == 0) return;
+
+      final data = await ApiService.getGlowMatchHistory(userId);
+
+      if (!mounted) return;
+
+      setState(() {
+        _history = data;
+      });
+    } catch (e) {
+      debugPrint('Gagal load history Glow Match: $e');
+    } finally {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingHistory = false;
+      });
+    }
+  }
+
+  void _openHistoryResult(dynamic item) {
+    final skinTone = (item['warna_kulit'] ?? '').toString();
+
+    final colors = (item['rekomendasi_warna'] ?? '')
+        .toString()
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    setState(() {
+      _skinToneLabel = skinTone.replaceAll('_', ' ').toUpperCase();
+      _skinToneSubtitle = 'HASIL HISTORY SCAN';
+
+      _recommendedColorNames = colors;
+      _recommendedColors = colors.map((c) => _mapColorNameToColor(c)).toList();
+
+      _filteredProducts = [];
+      _viewState = GlowMatchViewState.result;
+    });
   }
 
   @override
@@ -212,33 +333,59 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
 
     setState(() {
       _viewState = GlowMatchViewState.loading;
+      _errorMessage = null;
     });
 
     try {
-      final result =
-          await ApiService.analyzeFaceBytes(_selectedImageBytes!);
+      final result = await ApiService.analyzeFaceBytes(_selectedImageBytes!);
 
-      final colors = (result['recommended_colors'] as List)
+      if (result['error'] != null) {
+        throw Exception(result['error']);
+      }
+
+      final skinTone = (result['skin_tone'] ?? '').toString();
+
+      final colors = ((result['recommended_colors'] ?? []) as List)
           .map((e) => e.toString())
           .toList();
 
       final products = await ProductService.getProducts();
+      print(products);
 
       final filtered = products.where((p) {
-        final warna = (p['warna'] ?? '').toString().toLowerCase();
+        final warna = (p['warna'] ?? '').toString().toLowerCase().trim();
 
-        return colors.any((c) => warna.contains(c.toLowerCase()));
+        return colors.any((c) {
+          final colorName = c.toLowerCase().trim();
+          return warna == colorName;
+        });
       }).toList();
 
-      final colorObjects =
-        colors.map((c) => _mapColorNameToColor(c)).toList();
+      final colorObjects = colors.map((c) => _mapColorNameToColor(c)).toList();
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('userId') ?? 0;
+
+      if (userId != 0) {
+        await ApiService.saveGlowMatchHistory(
+          userId: userId,
+          warnaKulit: skinTone,
+          rekomendasiWarna: colors,
+          brightness: double.tryParse(result['brightness'].toString()) ?? 0,
+          labL: double.tryParse(result['lab_l'].toString()) ?? 0,
+          imageBytes: _selectedImageBytes!,
+        );
+
+        await _loadGlowMatchHistory();
+      }
+
+      if (!mounted) return;
 
       setState(() {
-        _skinToneLabel = result['skin_tone'].toString().toUpperCase();
+        _skinToneLabel = skinTone.replaceAll('_', ' ').toUpperCase();
         _skinToneSubtitle = 'HASIL ANALISIS';
 
         _recommendedColorNames = colors;
-        _recommendedColors = colorObjects; // 👈 INI PENTING
+        _recommendedColors = colorObjects;
         _filteredProducts = filtered;
 
         _viewState = GlowMatchViewState.result;
@@ -254,16 +401,15 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
   }
 
   void _showAnotherRecommendation() {
-    setState(() {
-      _recommendedColors = [
-        const Color(0xFF8D6E63),
-        const Color(0xFFC48B9F),
-        const Color(0xFF7A8F57),
-        const Color(0xFF7C6CB0),
-        const Color(0xFF2F4F4F),
-        const Color(0xFFE7C18A),
-      ];
-    });
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GlowMatchProductPage(
+          products: _filteredProducts,
+          colors: _recommendedColorNames,
+        ),
+      ),
+    );
   }
 
   void _retakePhoto() {
@@ -331,38 +477,49 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
 
   Color _mapColorNameToColor(String name) {
     switch (name.toLowerCase()) {
-      case 'soft pink':
-        return const Color(0xFFF8BBD0);
-      case 'peach':
-        return const Color(0xFFFFCCBC);
-      case 'nude':
-        return const Color(0xFFD7A98C);
-      case 'baby blue':
-        return const Color(0xFFBBDEFB);
+      case 'ivory':
+        return const Color(0xFFFFFFF0);
+      case 'sky blue':
+        return const Color(0xFF87CEEB);
+      case 'taupe':
+        return const Color(0xFF8B8589);
+      case 'dark choco':
+        return const Color(0xFF3B241C);
+      case 'black':
+        return Colors.black;
+      case 'shadow':
+        return const Color(0xFF4A4A4A);
+      case 'grey latte':
+        return const Color(0xFFB8AEA3);
+      case 'walnute':
+      case 'walnut':
+        return const Color(0xFF6B4423);
+      case 'dark brown':
+        return const Color(0xFF4A2C2A);
+      case 'pearl':
+        return const Color(0xFFF8F6F0);
+      case 'charcoal':
+        return const Color(0xFF36454F);
+      case 'smoke':
+        return const Color(0xFF848884);
       case 'dusty pink':
         return const Color(0xFFD8A7B1);
-      case 'olive':
-        return const Color(0xFF808000);
-      case 'cream':
-        return const Color(0xFFFFFDD0);
-      case 'terracotta':
-        return const Color(0xFFE2725B);
-      case 'mocha':
-        return const Color(0xFF967969);
-      case 'maroon':
-        return const Color(0xFF800000);
-      case 'mustard':
-        return const Color(0xFFFFDB58);
-      case 'army green':
-        return const Color(0xFF4B5320);
-      case 'emerald':
-        return const Color(0xFF50C878);
       case 'navy':
         return const Color(0xFF000080);
-      case 'burgundy':
-        return const Color(0xFF800020);
-      case 'gold':
-        return const Color(0xFFFFD700);
+      case 'biscuit':
+        return const Color(0xFFDDB892);
+      case 'soft yellow':
+        return const Color(0xFFFFF59D);
+      case 'golden brown':
+        return const Color(0xFF996515);
+      case 'grey seal':
+        return const Color(0xFF8A8D8F);
+      case 'latte':
+        return const Color(0xFFC8A27A);
+      case 'coral':
+        return const Color(0xFFFF7F50);
+      case 'peach':
+        return const Color(0xFFFFCCBC);
       default:
         return Colors.grey;
     }
@@ -448,6 +605,105 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
               fontSize: 14,
               color: Colors.black54,
               height: 1.5,
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'History Glow Match',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _loadGlowMatchHistory,
+                      icon: const Icon(Icons.refresh),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                if (_isLoadingHistory)
+                  const Center(child: CircularProgressIndicator())
+                else if (_history.isEmpty)
+                  const Text(
+                    'Belum ada history scan.',
+                    style: TextStyle(color: Colors.black54),
+                  )
+                else
+                  Column(
+                    children: _history.take(3).map((item) {
+                      final warnaKulit = (item['warna_kulit'] ?? '-').toString();
+                      final rekomendasi =
+                          (item['rekomendasi_warna'] ?? '-').toString();
+                      final tanggal = (item['created_at'] ?? '').toString();
+
+                      return InkWell(
+                        onTap: () => _openHistoryResult(item),
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8EEEE),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                warnaKulit.replaceAll('_', ' ').toUpperCase(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                rekomendasi,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                tanggal.length >= 10
+                                    ? tanggal.substring(0, 10)
+                                    : tanggal,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: 28),
@@ -775,52 +1031,41 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: _recommendedColors
-                  .map(
-                    (color) => Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: _buildColorDot(color),
-                    ),
-                  )
-                  .toList(),
+              children: List.generate(_recommendedColors.length, (index) {
+                final color = _recommendedColors[index];
+                final colorName = index < _recommendedColorNames.length
+                    ? _recommendedColorNames[index]
+                    : 'Warna';
+
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Column(
+                    children: [
+                      _buildColorDot(color),
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: 70,
+                        child: Text(
+                          colorName,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
             ),
           ),
           const SizedBox(height: 24),
-          Center(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Image.asset(
-                _recommendedHijabImage,
-                height: 330,
-                width: 250,
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
+          
           const SizedBox(height: 28),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _showAnotherRecommendation,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFEAC1BB),
-                foregroundColor: const Color(0xFF2D1B1B),
-                elevation: 5,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              child: const Text(
-                'SEE ANOTHER RECOMENDATION',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.4,
-                ),
-              ),
-            ),
-          ),
+          
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
@@ -844,6 +1089,7 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
               fontWeight: FontWeight.w800,
             ),
           ),
+
           const SizedBox(height: 14),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -856,26 +1102,95 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
                     )
                   ]
                 : _filteredProducts.map((product) {
-                    return Container(
-                      width: 150,
-                      margin: const EdgeInsets.only(right: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                final imageUrl = (product['image_url'] ??
+                        product['foto'] ??
+                        product['gambar'] ??
+                        product['image'] ??
+                        '')
+                    .toString();
+
+                final namaProduk = (product['nama_produk'] ??
+                        product['nama'] ??
+                        product['name'] ??
+                        'Produk')
+                    .toString();
+
+                final harga = (product['harga'] ??
+                        product['harga_jual'] ??
+                        product['price'] ??
+                        'Harga tidak tersedia')
+                    .toString();
+
+                return Container(
+                  width: 150,
+                  margin: const EdgeInsets.only(right: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      imageUrl.isNotEmpty
+                          ? Image.network(
+                              imageUrl,
+                              height: 120,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                height: 120,
+                                color: Colors.grey.shade200,
+                                child: const Icon(Icons.image_not_supported),
+                              ),
+                            )
+                          : Container(
+                              height: 120,
+                              color: Colors.grey.shade200,
+                              child: const Icon(Icons.image_not_supported),
+                            ),
+
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Text(
+                          namaProduk,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      child: Column(
-                        children: [
-                          Image.network(
-                            product['image_url'],
-                            height: 120,
-                            fit: BoxFit.cover,
-                          ),
-                          Text(product['nama_produk']),
-                          Text(product['harga']),
-                        ],
+
+                      Text(
+                        harga,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    );
-                  }).toList(),
+                    ],
+                  ),
+                );
+              }).toList()
+            ),
+          ),
+
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _showAnotherRecommendation,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEAC1BB),
+                foregroundColor: const Color(0xFF2D1B1B),
+                elevation: 5,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: const Text(
+                'SEE ANOTHER RECOMENDATION',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.4,
+                ),
+              ),
             ),
           ),
         ],

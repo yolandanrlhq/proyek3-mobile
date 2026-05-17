@@ -114,6 +114,9 @@ class LoginPage extends StatelessWidget {
                             id: user['id'],
                             name: user['name'],
                             email: user['email'],
+                            phone: user['no_telepon'],
+                            address: user['alamat'],
+                            foto: user['foto'],
                           );
 
                           Navigator.pushReplacement(

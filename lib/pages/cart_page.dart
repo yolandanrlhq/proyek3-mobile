@@ -17,7 +17,7 @@ class _CartPageState extends State<CartPage> {
   void initState() {
     super.initState();
     syncCartData();
-    showCartBadge.value = false;
+    unreadCartCount.value = 0;
   }
 
   int getTotalPrice() {
@@ -47,17 +47,18 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  void removeItem(Product item) {
+  void removeItem(Product item) async {
     setState(() {
-      cartList.value = cartList.value
-          .where((p) => p != item)
-          .toList();
+      cartList.value = cartList.value.where((p) => p != item).toList();
 
       qty.remove(item);
       selectedItems.remove(item);
+      selectedSizeCart.remove(item.kode);
 
       cartList.notifyListeners();
     });
+
+    await saveCartAndFavorite();
   }
 
   @override
@@ -211,15 +212,23 @@ class _CartPageState extends State<CartPage> {
 
                                   Text(
                                     item.kategori,
-
                                     maxLines: 1,
-
                                     overflow:
                                         TextOverflow.ellipsis,
-
                                     style: const TextStyle(
                                       fontSize: 11,
                                       color: Colors.grey,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 4),
+
+                                  Text(
+                                    "Size: ${selectedSizeCart[item.kode] ?? '-'}",
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
 
@@ -227,14 +236,11 @@ class _CartPageState extends State<CartPage> {
 
                                   Text(
                                     formatRupiah(item.price),
-
                                     style: const TextStyle(
                                       color:
                                           Color(0xFFE75480),
-
                                       fontWeight:
                                           FontWeight.bold,
-
                                       fontSize: 14,
                                     ),
                                   ),
@@ -448,33 +454,14 @@ class _CartPageState extends State<CartPage> {
 
               Navigator.push(
                 context,
-
                 MaterialPageRoute(
                   builder: (_) => CheckoutPage(
-  products: selectedProducts,
-  quantities: selectedQty,
-  allSelectedProducts: selectedProducts,
-),
+                    products: selectedProducts,
+                    quantities: selectedQty,
+                    allSelectedProducts: selectedProducts,
+                  ),
                 ),
-              ).then((_) {
-
-                setState(() {
-
-                  cartList.value = cartList.value
-                      .where(
-                        (item) =>
-                            !selectedProducts.contains(item),
-                      )
-                      .toList();
-
-                  for (var item in selectedProducts) {
-                    qty.remove(item);
-                    selectedItems.remove(item);
-                  }
-
-                  cartList.notifyListeners();
-                });
-              });
+              );
             },
 
             child: const Text(

@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 
 class EditProfilePage extends StatefulWidget {
   final String name;
@@ -30,6 +31,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   final ImagePicker picker = ImagePicker();
   Uint8List? selectedImage;
+  bool removeImage = false;
 
   @override
   void initState() {
@@ -54,7 +56,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Future<void> _pickImage() async {
     final XFile? image = await picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 85,
+      imageQuality: 60,
+      maxWidth: 800,
     );
 
     if (image == null) return;
@@ -63,6 +66,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     setState(() {
       selectedImage = bytes;
+      removeImage = false;
     });
   }
 
@@ -73,6 +77,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
       'phone': phoneController.text,
       'address': addressController.text,
       'profileImage': selectedImage,
+      'removeImage': removeImage,
+    });
+  }
+
+  void _removeImage() {
+    setState(() {
+      selectedImage = null;
+      removeImage = true;
     });
   }
 
@@ -144,6 +156,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
               style: TextStyle(
                 color: Colors.black54,
                 fontSize: 12,
+              ),
+            ),
+
+            if (selectedImage != null)
+            TextButton.icon(
+              onPressed: _removeImage,
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              label: const Text(
+                "Hapus foto profil",
+                style: TextStyle(color: Colors.red),
               ),
             ),
 

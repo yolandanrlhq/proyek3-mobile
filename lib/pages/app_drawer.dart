@@ -1,19 +1,59 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'home_page.dart';
 import 'product_page.dart';
 import 'discount_page.dart';
 import 'favorite_page.dart';
 import 'profile_page.dart';
+import 'order_status_page.dart';
 import '../services/auth_guard.dart';
+import '../services/auth_service.dart';
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends StatefulWidget {
   final String currentPage;
 
   const AppDrawer({
     super.key,
     required this.currentPage,
   });
+
+  @override
+  State<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> {
+  String userName = "Guest";
+  String userEmail = "";
+  Uint8List? profileImage;
+
+  @override
+  void initState() {
+    super.initState();
+    loadUser();
+  }
+
+  Future<void> loadUser() async {
+    final name = await AuthService.getUserName();
+    final email = await AuthService.getUserEmail();
+
+    final prefs = await SharedPreferences.getInstance();
+    final imageString = prefs.getString('profileImage');
+
+    if (!mounted) return;
+
+    setState(() {
+      userName = name ?? "Guest";
+      userEmail = email ?? "";
+
+      if (imageString != null && imageString.isNotEmpty) {
+        profileImage = base64Decode(imageString);
+      } else {
+        profileImage = null;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,33 +74,37 @@ class AppDrawer extends StatelessWidget {
                     Navigator.pop(context);
                     AuthGuard.check(context, const ProfilePage());
                   },
-                  child: const CircleAvatar(
+                  child: CircleAvatar(
                     radius: 34,
                     backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.person,
-                      size: 38,
-                      color: Colors.black,
-                    ),
+                    backgroundImage:
+                        profileImage != null ? MemoryImage(profileImage!) : null,
+                    child: profileImage == null
+                        ? const Icon(
+                            Icons.person,
+                            size: 38,
+                            color: Colors.black,
+                          )
+                        : null,
                   ),
                 ),
                 const SizedBox(height: 14),
-                const Text(
-                  "Welcome to",
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.black54,
-                    fontWeight: FontWeight.w500,
+                Text(
+                  userName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  "Hara Hijabneeds",
+                Text(
+                  userEmail,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 20,
-                    color: Colors.black87,
-                    fontWeight: FontWeight.bold,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.black54,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -77,6 +121,12 @@ class AppDrawer extends StatelessWidget {
             icon: Icons.shopping_bag,
             title: "Product",
             page: const ProductPage(),
+          ),
+          _item(
+            context,
+            icon: Icons.receipt_long,
+            title: "Pesanan",
+            page: const OrderStatusPage(),
           ),
           _item(
             context,
@@ -101,7 +151,7 @@ class AppDrawer extends StatelessWidget {
     required String title,
     required Widget page,
   }) {
-    final bool active = currentPage == title;
+    final bool active = widget.currentPage == title;
 
     return ListTile(
       leading: Icon(
@@ -117,11 +167,13 @@ class AppDrawer extends StatelessWidget {
       ),
       onTap: () {
         Navigator.pop(context);
+
         if (active) return;
 
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => page),
+          (route) => route.isFirst,
         );
       },
     );

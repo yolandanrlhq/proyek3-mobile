@@ -6,7 +6,7 @@ import '../config/app_config.dart';
 import '../services/auth_service.dart';
 import 'login_page.dart';
 
-class ProductDetailPage extends StatelessWidget {
+class ProductDetailPage extends StatefulWidget {
   final Product product;
 
   const ProductDetailPage({
@@ -15,15 +15,22 @@ class ProductDetailPage extends StatelessWidget {
   });
 
   @override
+  State<ProductDetailPage> createState() => _ProductDetailPageState();
+  }
+
+  class _ProductDetailPageState extends State<ProductDetailPage> {
+    Map<String, dynamic>? selectedSize;
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(product.name),
+        title: Text(widget.product.name),
         backgroundColor: Colors.pink[100],
         actions: [
-          ValueListenableBuilder<bool>(
-            valueListenable: showCartBadge,
-            builder: (context, showBadge, _) {
+          ValueListenableBuilder<int>(
+            valueListenable: unreadCartCount,
+            builder: (context, count, _) {
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -42,7 +49,7 @@ class ProductDetailPage extends StatelessWidget {
                         return;
                       }
 
-                      showCartBadge.value = false;
+                      unreadCartCount.value = 0;
 
                       Navigator.push(
                         context,
@@ -53,7 +60,7 @@ class ProductDetailPage extends StatelessWidget {
                     },
                   ),
 
-                  if (showBadge)
+                  if (count > 0)
                     Positioned(
                       right: 8,
                       top: 8,
@@ -63,8 +70,8 @@ class ProductDetailPage extends StatelessWidget {
                           color: Colors.red,
                           shape: BoxShape.circle,
                         ),
-                        child: const Text(
-                          "1",
+                        child: Text(
+                          '$count',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -115,15 +122,42 @@ class ProductDetailPage extends StatelessWidget {
                   return;
                 }
 
-                if (!cartList.value.contains(product)) {
-                  cartList.value = [...cartList.value, product];
+                if (selectedSize == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Pilih ukuran dulu"),
+                    ),
+                  );
+                  return;
                 }
 
-                showCartBadge.value = true;
+                final selectedUkuran = selectedSize?['ukuran'].toString() ?? "-";
+
+                final alreadyInCart = cartList.value.any(
+                  (item) => item.kode == widget.product.kode,
+                );
+
+                if (!alreadyInCart) {
+                  selectedSizeCart[widget.product.kode] = selectedUkuran;
+
+                  cartList.value = [...cartList.value, widget.product];
+                  cartList.notifyListeners();
+
+                  await saveCartAndFavorite();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Produk sudah ada di keranjang, jumlahnya bisa ditambah di cart"),
+                    ),
+                  );
+                  return;
+                }
+
+                unreadCartCount.value = 1;
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text("${product.name} ditambahkan ke keranjang"),
+                    content: Text("${widget.product.name} ditambahkan ke keranjang"),
                     duration: const Duration(seconds: 1),
                   ),
                 );
@@ -168,15 +202,27 @@ class ProductDetailPage extends StatelessWidget {
                     return;
                   }
 
+                  if (selectedSize == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Pilih ukuran dulu"),
+                      ),
+                    );
+                    return;
+                  }
+
+                  selectedSizeCart[widget.product.kode] =
+                  selectedSize?['ukuran'].toString() ?? "-";
+
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => CheckoutPage(
-                        products: [product],
+                        products: [widget.product],
                         quantities: Map<Product, int>.from({
-                          product: 1,
+                          widget.product: 1,
                         }),
-                        allSelectedProducts: [product],
+                        allSelectedProducts: [widget.product],
                       ),
                     ),
                   );
@@ -212,10 +258,10 @@ class ProductDetailPage extends StatelessWidget {
           children: [
             SizedBox(
               height: 280,
-              child: product.gambars.isNotEmpty
+              child: widget.product.gambars.isNotEmpty
                   ? PageView(
                       children:
-                          product.gambars.map<Widget>((img) {
+                          widget.product.gambars.map<Widget>((img) {
                           return Image.network(
                             getImageUrl(img.toString()),
                             fit: BoxFit.cover,
@@ -232,9 +278,9 @@ class ProductDetailPage extends StatelessWidget {
                           );
                       }).toList(),
                     )
-                  : product.image.isNotEmpty
+                  : widget.product.image.isNotEmpty
                       ? Image.network(
-                          getImageUrl(product.image),
+                          getImageUrl(widget.product.image),
                           fit: BoxFit.cover,
                           width: double.infinity,
                           errorBuilder: (_, __, ___) =>
@@ -258,7 +304,7 @@ class ProductDetailPage extends StatelessWidget {
                     CrossAxisAlignment.start,
                 children: [
                   Text(
-                    product.name,
+                    widget.product.name,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -268,7 +314,7 @@ class ProductDetailPage extends StatelessWidget {
                   const SizedBox(height: 8),
 
                   Text(
-                    formatRupiah(product.price),
+                    formatRupiah(widget.product.price),
                     style: const TextStyle(
                       fontSize: 18,
                       color: Color(0xFFE75480),
@@ -279,7 +325,7 @@ class ProductDetailPage extends StatelessWidget {
                   const SizedBox(height: 8),
 
                   Text(
-                    "Kode: ${product.kode}",
+                    "Kode: ${widget.product.kode}",
                     style: const TextStyle(
                       color: Colors.grey,
                     ),
@@ -292,7 +338,7 @@ class ProductDetailPage extends StatelessWidget {
                       Expanded(
                         child: _InfoBox(
                           title: "Kategori",
-                          value: product.kategori,
+                          value: widget.product.kategori,
                         ),
                       ),
 
@@ -301,7 +347,7 @@ class ProductDetailPage extends StatelessWidget {
                       Expanded(
                         child: _InfoBox(
                           title: "Warna",
-                          value: product.warna,
+                          value: widget.product.warna,
                         ),
                       ),
                     ],
@@ -319,29 +365,33 @@ class ProductDetailPage extends StatelessWidget {
 
                   const SizedBox(height: 10),
 
-                  if (product.ukurans.isNotEmpty)
+                  if (widget.product.ukurans.isNotEmpty)
                     Column(
-                      children:
-                          product.ukurans.map<Widget>((u) {
-                        return Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.only(
-                            bottom: 8,
-                          ),
-                          padding:
-                              const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color:
-                                const Color(0xFFFFEEF3),
-                            borderRadius:
-                                BorderRadius.circular(
-                              14,
+                      children: widget.product.ukurans.map<Widget>((u) {
+                        final isSelected = selectedSize == u;
+
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedSize = u;
+                            });
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFFE75480)
+                                  : const Color(0xFFFFEEF3),
+                              borderRadius: BorderRadius.circular(14),
                             ),
-                          ),
-                          child: Text(
-                            "${u['ukuran']} - Stok: ${u['stok']} - ${formatRupiah(int.tryParse(u['harga'].toString()) ?? 0)}",
-                            style: const TextStyle(
-                              fontSize: 13,
+                            child: Text(
+                              "${u['ukuran']} - Stok: ${u['stok']} - ${formatRupiah(int.tryParse(u['harga'].toString()) ?? 0)}",
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isSelected ? Colors.white : Colors.black,
+                              ),
                             ),
                           ),
                         );
@@ -363,7 +413,7 @@ class ProductDetailPage extends StatelessWidget {
                   const SizedBox(height: 8),
 
                   Text(
-                    product.deskripsi,
+                    widget.product.deskripsi,
                     style: const TextStyle(
                       fontSize: 14,
                       height: 1.5,

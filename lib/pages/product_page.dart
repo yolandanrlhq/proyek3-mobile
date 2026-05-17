@@ -7,6 +7,7 @@ import '../config/app_config.dart';
 import 'product_detail_page.dart';
 import 'login_page.dart';
 import '../services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProductPage extends StatefulWidget {
   const ProductPage({super.key});
@@ -57,14 +58,18 @@ class _ProductPageState extends State<ProductPage> {
     }
   }
 
-  void toggleFavorite(Product product) {
+  void toggleFavorite(Product product) async {
     setState(() {
-      if (favoriteList.contains(product)) {
-        favoriteList.remove(product);
+      final exists = favoriteList.any((item) => item.kode == product.kode);
+
+      if (exists) {
+        favoriteList.removeWhere((item) => item.kode == product.kode);
       } else {
         favoriteList.add(product);
       }
     });
+
+    await saveCartAndFavorite();
   }
 
   @override
@@ -92,9 +97,9 @@ class _ProductPageState extends State<ProductPage> {
         ),
         centerTitle: true,
         actions: [
-          ValueListenableBuilder<bool>(
-            valueListenable: showCartBadge,
-            builder: (context, showBadge, _) {
+          ValueListenableBuilder<int>(
+            valueListenable: unreadCartCount,
+            builder: (context, count, _) {
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -113,7 +118,7 @@ class _ProductPageState extends State<ProductPage> {
                         return;
                       }
 
-                      showCartBadge.value = false;
+                      unreadCartCount.value = 0;
 
                       Navigator.push(
                         context,
@@ -124,7 +129,7 @@ class _ProductPageState extends State<ProductPage> {
                     },
                   ),
 
-                  if (showBadge)
+                  if (count > 0)
                     Positioned(
                       right: 6,
                       top: 6,
@@ -134,14 +139,14 @@ class _ProductPageState extends State<ProductPage> {
                           color: Colors.red,
                           shape: BoxShape.circle,
                         ),
-                        child: const Text(
-                          "1",
-                          style: TextStyle(
+                        child: Text(
+                          '$count',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
-                        ),
+                        )
                       ),
                     ),
                 ],
@@ -167,42 +172,11 @@ class _ProductPageState extends State<ProductPage> {
 
                 return ProductCard(
                   product: product,
-                  isFavorite: favoriteList.contains(product),
+                  isFavorite: favoriteList.any((item) => item.kode == product.kode),
                   onFavorite: () => toggleFavorite(product),
                 );
               },
             ),
-    );
-  }
-
-  Widget _buildDrawerItem({
-    required IconData icon,
-    required String title,
-    required Widget page,
-    bool isCurrentPage = false,
-  }) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isCurrentPage ? Colors.black87 : Colors.black54,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: isCurrentPage ? FontWeight.bold : FontWeight.w500,
-          color: Colors.black87,
-        ),
-      ),
-      onTap: () {
-        showCartBadge.value = false;
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const CartPage(),
-          ),
-        );
-      }
     );
   }
 }
@@ -242,6 +216,20 @@ class Product {
       ukurans: json['ukurans'] ?? [],
       gambars: json['gambars'] ?? [],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'price': price,
+      'image': image,
+      'kode_produk': kode,
+      'kategori': kategori,
+      'warna': warna,
+      'deskripsi': deskripsi,
+      'ukurans': ukurans,
+      'gambars': gambars,
+    };
   }
 }
 
@@ -394,6 +382,70 @@ class ProductCard extends StatelessWidget {
   }
 }
 
+Future<void> saveCartAndFavorite() async {
+  final prefs = await SharedPreferences.getInstance();
+
+  await prefs.setString(
+    'cartList',
+    jsonEncode(
+      cartList.value.map((item) => item.toJson()).toList(),
+    ),
+  );
+
+  await prefs.setString(
+    'favoriteList',
+    jsonEncode(
+      favoriteList.map((item) => item.toJson()).toList(),
+    ),
+  );
+
+  await prefs.setString(
+    'selectedSizeCart',
+    jsonEncode(selectedSizeCart),
+  );
+}
+
+Future<void> loadCartAndFavorite() async {
+  final prefs = await SharedPreferences.getInstance();
+
+  final cartString = prefs.getString('cartList');
+  final favoriteString = prefs.getString('favoriteList');
+  final selectedSizeString = prefs.getString('selectedSizeCart');
+
+  if (cartString != null) {
+    final List decoded = jsonDecode(cartString);
+
+    cartList.value = decoded
+        .map((item) => Product.fromJson(item))
+        .toList()
+        .cast<Product>();
+  }
+
+  if (favoriteString != null) {
+    final List decoded = jsonDecode(favoriteString);
+
+    favoriteList.clear();
+    favoriteList.addAll(
+      decoded
+          .map((item) => Product.fromJson(item))
+          .toList()
+          .cast<Product>(),
+    );
+  }
+
+  if (selectedSizeString != null) {
+    final Map<String, dynamic> decoded =
+        jsonDecode(selectedSizeString);
+
+    selectedSizeCart.clear();
+
+    decoded.forEach((key, value) {
+      selectedSizeCart[key] = value.toString();
+    });
+  }
+}
+
 List<Product> favoriteList = [];
 ValueNotifier<List<Product>> cartList = ValueNotifier([]);
-ValueNotifier<bool> showCartBadge = ValueNotifier(false);
+ValueNotifier<int> unreadCartCount = ValueNotifier(0);
+Map<String, String> selectedSizeCart = {};

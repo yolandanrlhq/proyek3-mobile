@@ -9,7 +9,7 @@ class DiscountService {
   static Future<List<DiscountModel>> getDiscounts() async {
 
     final response = await http.get(
-      Uri.parse('hhttp://127.0.0.1:8000/api/discounts'),
+      Uri.parse('http://127.0.0.1:8000/api/discounts'),
     );
 
     if (response.statusCode == 200) {

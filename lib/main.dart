@@ -1,7 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
+
+import 'firebase_options.dart';
+import 'services/notification_service.dart';
 import 'pages/splash_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  if (!kIsWeb) {
+    await NotificationService.init();
+
+    final token = await NotificationService.getToken();
+    print("FCM TOKEN: $token");
+  }
+
   runApp(const HaraApp());
 }
 
@@ -13,9 +31,9 @@ class HaraApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        fontFamily: 'Jakarta', // atau 'Poppins'
+        fontFamily: 'Jakarta',
       ),
-      home: const SplashScreen(), // ⬅️ arahkan ke splash
+      home: const SplashScreen(),
     );
   }
 }

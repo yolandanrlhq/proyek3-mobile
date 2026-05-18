@@ -70,6 +70,15 @@ class OrderModel {
 
 List<OrderModel> orderList = [];
 
+Future<void> saveOrders() async {
+  final prefs = await SharedPreferences.getInstance();
+
+  await prefs.setString(
+    'orderList',
+    jsonEncode(orderList.map((e) => e.toJson()).toList()),
+  );
+}
+
 Future<void> loadOrders() async {
   final prefs = await SharedPreferences.getInstance();
 

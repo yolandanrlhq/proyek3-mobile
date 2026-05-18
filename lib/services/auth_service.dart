@@ -80,12 +80,36 @@ class AuthService {
         return true;
       }
 
-      await logout();
       return false;
     } catch (e) {
-      print('VALIDATE ERROR: $e');
-      await logout();
-      return false;
+      print(e);
+      return true;
+    }
+  }
+
+  static Future<void> refreshUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userId');
+
+    if (userId == null) return;
+
+    final response = await http.get(
+      Uri.parse('${AppConfig.productBaseUrl}/check-user/$userId'),
+      headers: {'Accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final user = data['user'];
+
+      await saveSession(
+        id: user['id'],
+        name: user['name'],
+        email: user['email'],
+        phone: user['no_telepon'],
+        address: user['alamat'],
+        foto: user['foto'],
+      );
     }
   }
 
@@ -128,8 +152,9 @@ class AuthService {
     await prefs.remove('userId');
     await prefs.remove('userName');
     await prefs.remove('userEmail');
+    await prefs.remove('phone');
+    await prefs.remove('address');
     await prefs.remove('profileImage');
-    await prefs.clear();
   }
 
   static Future<String?> getUserName() async {

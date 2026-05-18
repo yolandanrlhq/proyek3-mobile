@@ -20,6 +20,7 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
 
   Future<void> loadData() async {
     await loadOrders();
+    print("ORDER LOADED: ${orderList.length}");
 
     if (!mounted) return;
     setState(() {});

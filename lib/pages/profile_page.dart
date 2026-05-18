@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'edit_profile_page.dart';
+import '../services/auth_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -16,8 +15,8 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   String name = "Hara Hijabneeds User";
   String email = "user@hara-hijabneeds.com";
-  String phone = "+62 881-4556-388";
-  String address = "Bandung, Indonesia";
+  String phone = "";
+  String address = "";
 
   Uint8List? profileImage;
 
@@ -30,18 +29,44 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> loadProfile() async {
     final prefs = await SharedPreferences.getInstance();
 
+    final imageString = prefs.getString('profileImage');
+
     setState(() {
-      name = prefs.getString('name') ?? name;
-      email = prefs.getString('email') ?? email;
-      phone = prefs.getString('phone') ?? phone;
-      address = prefs.getString('address') ?? address;
+      profileImage = null; // paksa reset dulu
 
-      final imageString = prefs.getString('profileImage');
+      name = prefs.getString('userName') ?? "Hara Hijabneeds User";
+      email = prefs.getString('userEmail') ?? "user@hara-hijabneeds.com";
+      phone = prefs.getString('phone') ?? "";
+      address = prefs.getString('address') ?? "";
 
-      if (imageString != null) {
+      if (imageString != null && imageString.isNotEmpty) {
         profileImage = base64Decode(imageString);
       }
     });
+  }
+
+  void _previewProfileImage() {
+    if (profileImage == null) return;
+
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(18),
+        child: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: InteractiveViewer(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: Image.memory(
+                profileImage!,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> saveProfile({
@@ -50,17 +75,39 @@ class _ProfilePageState extends State<ProfilePage> {
     required String newPhone,
     required String newAddress,
     Uint8List? newImage,
+    bool removeImage = false,
   }) async {
     final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userId');
 
-    await prefs.setString('name', newName);
-    await prefs.setString('email', newEmail);
+    if (userId == null) {
+      print('User ID tidak ditemukan');
+      return;
+    }
+
+    final success = await AuthService.updateProfile(
+      userId: userId,
+      name: newName,
+      phone: newPhone,
+      address: newAddress,
+      profileImage: newImage,
+      removeImage: removeImage,
+    );
+
+    if (!success) {
+      print('Gagal update profile ke database');
+      return;
+    }
+
+    await prefs.setString('userName', newName);
+    await prefs.setString('userEmail', newEmail);
     await prefs.setString('phone', newPhone);
     await prefs.setString('address', newAddress);
 
-    if (newImage != null) {
-      final imageString = base64Encode(newImage);
-      await prefs.setString('profileImage', imageString);
+    if (removeImage) {
+      await prefs.remove('profileImage');
+    } else if (newImage != null) {
+      await prefs.setString('profileImage', base64Encode(newImage));
     }
 
     setState(() {
@@ -68,7 +115,12 @@ class _ProfilePageState extends State<ProfilePage> {
       email = newEmail;
       phone = newPhone;
       address = newAddress;
-      profileImage = newImage;
+
+      if (removeImage) {
+        profileImage = null;
+      } else if (newImage != null) {
+        profileImage = newImage;
+      }
     });
   }
 
@@ -93,6 +145,7 @@ class _ProfilePageState extends State<ProfilePage> {
         newPhone: result['phone'],
         newAddress: result['address'],
         newImage: result['profileImage'],
+        removeImage: result['removeImage'] ?? false,
       );
     }
   }
@@ -137,21 +190,22 @@ class _ProfilePageState extends State<ProfilePage> {
 
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 52,
-                    backgroundColor: Colors.white,
-
-                    backgroundImage: profileImage != null
-                        ? MemoryImage(profileImage!)
-                        : null,
-
-                    child: profileImage == null
-                        ? const Icon(
-                            Icons.person,
-                            size: 60,
-                            color: Colors.black87,
-                          )
-                        : null,
+                  GestureDetector(
+                    onTap: _previewProfileImage,
+                    child: CircleAvatar(
+                      radius: 52,
+                      backgroundColor: Colors.white,
+                      backgroundImage: profileImage != null
+                          ? MemoryImage(profileImage!)
+                          : null,
+                      child: profileImage == null
+                          ? const Icon(
+                              Icons.person,
+                              size: 60,
+                              color: Colors.black87,
+                            )
+                          : null,
+                    ),
                   ),
 
                   const SizedBox(height: 14),
@@ -194,13 +248,13 @@ class _ProfilePageState extends State<ProfilePage> {
             _buildProfileItem(
               icon: Icons.phone_outlined,
               title: "Nomor Telepon",
-              value: phone,
+              value: phone.isEmpty ? "Belum ditambahkan" : phone,
             ),
 
             _buildProfileItem(
               icon: Icons.location_on_outlined,
               title: "Alamat",
-              value: address,
+              value: address.isEmpty ? "Belum ditambahkan" : address,
             ),
 
             const SizedBox(height: 24),

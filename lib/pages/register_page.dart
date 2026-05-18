@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'otp_page.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import '../services/auth_service.dart';
+import 'home_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -262,6 +265,98 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
 
                   const SizedBox(height: 14),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.black87,
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(
+                          color: Color(0xFFF7C9C0),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+
+                      onPressed: () async {
+                        try {
+                          final googleSignIn = GoogleSignIn.instance;
+
+                          await googleSignIn.initialize(
+                            serverClientId: "507101633813-u46gdgk41ctudjipmbfed4psighe5f2m.apps.googleusercontent.com",
+                          );
+
+                          final account = await googleSignIn.authenticate();
+
+                          final response = await ApiService.loginWithGoogle(
+                            name: account.displayName ?? 'Google User',
+                            email: account.email,
+                            googleId: account.id,
+                          );
+
+                          if (response['user'] != null) {
+                            final user = response['user'];
+
+                            await AuthService.saveSession(
+                              id: user['id'],
+                              name: user['name'],
+                              email: user['email'],
+                            );
+
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const HomePage(),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  response['message'] ?? 'Login Google gagal',
+                                ),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Google login error: $e'),
+                            ),
+                          );
+                        }
+                      },
+
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset(
+                            'assets/icons/google.png',
+                            height: 22,
+                            width: 22,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.login, size: 22);
+                            },
+                          ),
+                          const SizedBox(width: 10),
+                          const Flexible(
+                            child: Text(
+                              "Continue with Google",
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
 
                   TextButton(
                     onPressed: () {

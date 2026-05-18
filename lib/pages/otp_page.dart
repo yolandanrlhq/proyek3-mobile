@@ -1,13 +1,81 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import 'home_page.dart';
 
-class OtpPage extends StatelessWidget {
+class OtpPage extends StatefulWidget {
   final String email;
+
+  const OtpPage({super.key, required this.email});
+
+  @override
+  State<OtpPage> createState() => _OtpPageState();
+}
+
+class _OtpPageState extends State<OtpPage> {
   final TextEditingController otp = TextEditingController();
 
-  OtpPage({super.key, required this.email});
+  int resendSeconds = 60;
+  Timer? resendTimer;
+  bool canResend = false;
+
+  @override
+  void initState() {
+    super.initState();
+    startResendTimer();
+  }
+
+  void startResendTimer() {
+    setState(() {
+      canResend = false;
+      resendSeconds = 60;
+    });
+
+    resendTimer?.cancel();
+
+    resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (resendSeconds == 0) {
+        timer.cancel();
+        setState(() {
+          canResend = true;
+        });
+      } else {
+        setState(() {
+          resendSeconds--;
+        });
+      }
+    });
+  }
+
+  Future<void> resendOtp() async {
+    try {
+      final response = await ApiService.resendOtp(
+        email: widget.email,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response['message'].toString()),
+        ),
+      );
+
+      startResendTimer();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    otp.dispose();
+    resendTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,10 +91,12 @@ class OtpPage extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              "Kode OTP sudah dikirim ke:\n$email",
+              "Kode OTP sudah dikirim ke:\n${widget.email}",
               textAlign: TextAlign.center,
             ),
+
             const SizedBox(height: 24),
+
             TextField(
               controller: otp,
               keyboardType: TextInputType.number,
@@ -37,16 +107,16 @@ class OtpPage extends StatelessWidget {
                 ),
               ),
             ),
+
             const SizedBox(height: 24),
+
             ElevatedButton(
               onPressed: () async {
                 try {
                   final response = await ApiService.verifyOtp(
-                    email: email,
+                    email: widget.email,
                     otpCode: otp.text,
                   );
-
-                  print(response);
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -71,8 +141,6 @@ class OtpPage extends StatelessWidget {
                     );
                   }
                 } catch (e) {
-                  print(e);
-
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(e.toString()),
@@ -81,6 +149,17 @@ class OtpPage extends StatelessWidget {
                 }
               },
               child: const Text("Verifikasi"),
+            ),
+
+            const SizedBox(height: 16),
+
+            TextButton(
+              onPressed: canResend ? resendOtp : null,
+              child: Text(
+                canResend
+                    ? "Kirim ulang OTP"
+                    : "Kirim ulang OTP dalam $resendSeconds detik",
+              ),
             ),
           ],
         ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'auth_check_page.dart';
 import 'home_page.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -11,21 +10,21 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-
   @override
   void initState() {
     super.initState();
 
     Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
+
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 800),
           pageBuilder: (context, animation, secondaryAnimation) =>
-            const HomePage(),
+              const HomePage(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            // 🔥 Fade + Slide (kayak Shopee feel)
             final tween = Tween(
-              begin: const Offset(0.0, 0.2), // dari bawah dikit
+              begin: const Offset(0.0, 0.2),
               end: Offset.zero,
             ).chain(CurveTween(curve: Curves.easeInOut));
 

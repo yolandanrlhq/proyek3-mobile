@@ -18,9 +18,9 @@ class _AuthCheckPageState extends State<AuthCheckPage> {
   }
 
   Future<void> checkLogin() async {
-    await Future.delayed(const Duration(seconds: 1));
+    final isLogin = await AuthService.validateSession();
 
-    final isLogin = await AuthService.isLoggedIn();
+    if (!mounted) return;
 
     Navigator.pushReplacement(
       context,
@@ -32,16 +32,9 @@ class _AuthCheckPageState extends State<AuthCheckPage> {
 
   @override
   Widget build(BuildContext context) {
-    const Color softPink = Color(0xFFFFF1EF);
-
-    return Scaffold(
-      backgroundColor: softPink,
-      body: Center(
-        child: Image.asset(
-          'assets/images/logo_hara.png',
-          height: 130,
-        ),
-      ),
+    return const Scaffold(
+      backgroundColor: Color(0xFFF7C9C0),
+      body: SizedBox.shrink(),
     );
   }
 }

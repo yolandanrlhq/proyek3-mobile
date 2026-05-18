@@ -1,18 +1,90 @@
 import 'package:flutter/material.dart';
 import 'product_page.dart';
 import 'cart_page.dart';
+import 'checkout_page.dart';
+import '../config/app_config.dart';
+import '../services/auth_service.dart';
+import 'login_page.dart';
 
-class ProductDetailPage extends StatelessWidget {
+class ProductDetailPage extends StatefulWidget {
   final Product product;
 
-  const ProductDetailPage({super.key, required this.product});
+  const ProductDetailPage({
+    super.key,
+    required this.product,
+  });
+
+  @override
+  State<ProductDetailPage> createState() => _ProductDetailPageState();
+  }
+
+  class _ProductDetailPageState extends State<ProductDetailPage> {
+    Map<String, dynamic>? selectedSize;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(product.name),
+        title: Text(widget.product.name),
         backgroundColor: Colors.pink[100],
+        actions: [
+          ValueListenableBuilder<int>(
+            valueListenable: unreadCartCount,
+            builder: (context, count, _) {
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.shopping_cart_outlined),
+                    onPressed: () async {
+                      final loggedIn = await AuthService.isLoggedIn();
+
+                      if (!loggedIn) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LoginPage(),
+                          ),
+                        );
+                        return;
+                      }
+
+                      unreadCartCount.value = 0;
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CartPage(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  if (count > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '$count',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
 
       bottomNavigationBar: Container(
@@ -30,30 +102,73 @@ class ProductDetailPage extends StatelessWidget {
         child: Row(
           children: [
             InkWell(
-              onTap: () {
-                if (!cartList.value.contains(product)) {
-                  cartList.value = [...cartList.value, product];
-                } else {
-                  cartList.notifyListeners();
+              onTap: () async {
+                final isLoggedIn = await AuthService.isLoggedIn();
+
+                if (!isLoggedIn) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Silakan login dulu untuk menambahkan ke keranjang"),
+                    ),
+                  );
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => LoginPage(),
+                    ),
+                  );
+
+                  return;
                 }
+
+                if (selectedSize == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Pilih ukuran dulu"),
+                    ),
+                  );
+                  return;
+                }
+
+                final selectedUkuran = selectedSize?['ukuran'].toString() ?? "-";
+
+                final alreadyInCart = cartList.value.any(
+                  (item) => item.kode == widget.product.kode,
+                );
+
+                if (!alreadyInCart) {
+                  selectedSizeCart[widget.product.kode] = selectedUkuran;
+
+                  cartList.value = [...cartList.value, widget.product];
+                  cartList.notifyListeners();
+
+                  await saveCartAndFavorite();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Produk sudah ada di keranjang, jumlahnya bisa ditambah di cart"),
+                    ),
+                  );
+                  return;
+                }
+
+                unreadCartCount.value = 1;
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text("${product.name} ditambahkan ke keranjang"),
+                    content: Text("${widget.product.name} ditambahkan ke keranjang"),
                     duration: const Duration(seconds: 1),
                   ),
-                );
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const CartPage()),
                 );
               },
               child: Container(
                 width: 54,
                 height: 48,
                 decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFFE75480)),
+                  border: Border.all(
+                    color: const Color(0xFFE75480),
+                  ),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(
@@ -67,21 +182,47 @@ class ProductDetailPage extends StatelessWidget {
 
             Expanded(
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
+                  final loggedIn = await AuthService.isLoggedIn();
+
+                  if (!loggedIn) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Silakan login dulu untuk checkout"),
+                      ),
+                    );
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LoginPage(),
+                      ),
+                    );
+
+                    return;
+                  }
+
+                  if (selectedSize == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Pilih ukuran dulu"),
+                      ),
+                    );
+                    return;
+                  }
+
+                  selectedSizeCart[widget.product.kode] =
+                  selectedSize?['ukuran'].toString() ?? "-";
+
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => Scaffold(
-                        appBar: AppBar(
-                          title: const Text("Checkout"),
-                          backgroundColor: Colors.pink[100],
-                        ),
-                        body: const Center(
-                          child: Text(
-                            "Ini halaman checkout sementara ya 😆",
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ),
+                      builder: (_) => CheckoutPage(
+                        products: [widget.product],
+                        quantities: Map<Product, int>.from({
+                          widget.product: 1,
+                        }),
+                        allSelectedProducts: [widget.product],
                       ),
                     ),
                   );
@@ -89,7 +230,10 @@ class ProductDetailPage extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFE75480),
                   foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 48),
+                  minimumSize: const Size(
+                    double.infinity,
+                    48,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -114,38 +258,53 @@ class ProductDetailPage extends StatelessWidget {
           children: [
             SizedBox(
               height: 280,
-              child: product.gambars.isNotEmpty
+              child: widget.product.gambars.isNotEmpty
                   ? PageView(
-                      children: product.gambars.map<Widget>((img) {
-                        return Image.network(
-                          img.toString(),
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.broken_image, size: 60),
-                        );
+                      children:
+                          widget.product.gambars.map<Widget>((img) {
+                          return Image.network(
+                            getImageUrl(img.toString()),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (_, error, stackTrace) {
+                              debugPrint("GAMBAR ERROR: $error");
+                              debugPrint("URL GAMBAR: ${getImageUrl(img.toString())}");
+
+                              return const Icon(
+                                Icons.broken_image,
+                                size: 60,
+                              );
+                            },
+                          );
                       }).toList(),
                     )
-                  : product.image.isNotEmpty
+                  : widget.product.image.isNotEmpty
                       ? Image.network(
-                          product.image,
+                          getImageUrl(widget.product.image),
                           fit: BoxFit.cover,
                           width: double.infinity,
                           errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.broken_image, size: 60),
-                        )
+                              const Icon(
+                            Icons.broken_image,
+                            size: 60,
+                          ),
+                      )
                       : const Center(
-                          child: Icon(Icons.image_not_supported, size: 60),
+                          child: Icon(
+                            Icons.image_not_supported,
+                            size: 60,
+                          ),
                         ),
             ),
 
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
                 children: [
                   Text(
-                    product.name,
+                    widget.product.name,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -155,7 +314,7 @@ class ProductDetailPage extends StatelessWidget {
                   const SizedBox(height: 8),
 
                   Text(
-                    formatRupiah(product.price),
+                    formatRupiah(widget.product.price),
                     style: const TextStyle(
                       fontSize: 18,
                       color: Color(0xFFE75480),
@@ -166,8 +325,10 @@ class ProductDetailPage extends StatelessWidget {
                   const SizedBox(height: 8),
 
                   Text(
-                    "Kode: ${product.kode}",
-                    style: const TextStyle(color: Colors.grey),
+                    "Kode: ${widget.product.kode}",
+                    style: const TextStyle(
+                      color: Colors.grey,
+                    ),
                   ),
 
                   const SizedBox(height: 16),
@@ -177,14 +338,16 @@ class ProductDetailPage extends StatelessWidget {
                       Expanded(
                         child: _InfoBox(
                           title: "Kategori",
-                          value: product.kategori,
+                          value: widget.product.kategori,
                         ),
                       ),
+
                       const SizedBox(width: 10),
+
                       Expanded(
                         child: _InfoBox(
                           title: "Warna",
-                          value: product.warna,
+                          value: widget.product.warna,
                         ),
                       ),
                     ],
@@ -202,20 +365,34 @@ class ProductDetailPage extends StatelessWidget {
 
                   const SizedBox(height: 10),
 
-                  if (product.ukurans.isNotEmpty)
+                  if (widget.product.ukurans.isNotEmpty)
                     Column(
-                      children: product.ukurans.map<Widget>((u) {
-                        return Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFEEF3),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Text(
-                            "${u['ukuran']} - Stok: ${u['stok']} - ${formatRupiah(int.tryParse(u['harga'].toString()) ?? 0)}",
-                            style: const TextStyle(fontSize: 13),
+                      children: widget.product.ukurans.map<Widget>((u) {
+                        final isSelected = selectedSize == u;
+
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedSize = u;
+                            });
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFFE75480)
+                                  : const Color(0xFFFFEEF3),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Text(
+                              "${u['ukuran']} - Stok: ${u['stok']} - ${formatRupiah(int.tryParse(u['harga'].toString()) ?? 0)}",
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isSelected ? Colors.white : Colors.black,
+                              ),
+                            ),
                           ),
                         );
                       }).toList(),
@@ -236,7 +413,7 @@ class ProductDetailPage extends StatelessWidget {
                   const SizedBox(height: 8),
 
                   Text(
-                    product.deskripsi,
+                    widget.product.deskripsi,
                     style: const TextStyle(
                       fontSize: 14,
                       height: 1.5,
@@ -270,7 +447,8 @@ class _InfoBox extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
           Text(
             title,
@@ -279,7 +457,9 @@ class _InfoBox extends StatelessWidget {
               fontSize: 12,
             ),
           ),
+
           const SizedBox(height: 4),
+
           Text(
             value.isNotEmpty ? value : "-",
             style: const TextStyle(

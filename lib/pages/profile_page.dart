@@ -23,7 +23,12 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    loadProfile();
+    initProfile();
+  }
+
+  Future<void> initProfile() async {
+    await AuthService.refreshUserData();
+    await loadProfile();
   }
 
   Future<void> loadProfile() async {

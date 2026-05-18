@@ -31,7 +31,12 @@ class _AppDrawerState extends State<AppDrawer> {
   @override
   void initState() {
     super.initState();
-    loadUser();
+    initUser();
+  }
+
+  Future<void> initUser() async {
+    await AuthService.refreshUserData();
+    await loadUser();
   }
 
   Future<void> loadUser() async {

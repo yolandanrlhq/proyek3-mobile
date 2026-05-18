@@ -1,22 +1,19 @@
 import 'dart:convert';
 import 'dart:typed_data';
-
 import 'package:audioplayers/audioplayers.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'product_page.dart';
 import 'discount_page.dart';
 import 'favorite_page.dart';
 import 'glow_match_page.dart';
 import 'cart_page.dart';
 import 'profile_page.dart';
-
 import '../services/auth_guard.dart';
 import '../services/auth_service.dart';
-
 import 'settings_page.dart';
+import 'app_drawer.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -41,16 +38,17 @@ class _HomePageState extends State<HomePage> {
   Uint8List? profileImage;
 
   @override
-  void initState() {
-    super.initState();
+void initState() {
+  super.initState();
 
-    loadUser();
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    await AuthService.refreshUserData();
+    await loadUser();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await playMusic();
-      showDiscountPopup();
-    });
-  }
+    await playMusic();
+    showDiscountPopup();
+  });
+}
 
   Future<void> playMusic() async {
     try {
@@ -276,6 +274,8 @@ class _HomePageState extends State<HomePage> {
                     color: Colors.grey,
                   ),
                   onPressed: () async {
+                    unreadCartCount.value = 0;
+
                     await stopMusic();
 
                     AuthGuard.check(
@@ -284,10 +284,10 @@ class _HomePageState extends State<HomePage> {
                     );
                   },
                 ),
-                ValueListenableBuilder<List<Product>>(
-                  valueListenable: cartList,
-                  builder: (context, cart, _) {
-                    if (cart.isEmpty) return const SizedBox();
+                ValueListenableBuilder<int>(
+                  valueListenable: unreadCartCount,
+                  builder: (context, count, _) {
+                    if (count == 0) return const SizedBox();
 
                     return Positioned(
                       right: 4,
@@ -303,7 +303,7 @@ class _HomePageState extends State<HomePage> {
                           minHeight: 14,
                         ),
                         child: Text(
-                          '${cart.length}',
+                          '$count',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 9,
@@ -602,158 +602,7 @@ const SizedBox(height: 30),
         ),
       ),
 
-      drawer: Drawer(
-        backgroundColor: const Color(0xFFFFF8F7),
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                color: Color(0xFFF7C9C0),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-
-                  GestureDetector(
-                    onTap: () async {
-                      Navigator.pop(context);
-                      await _openProfilePage();
-                    },
-                    child: CircleAvatar(
-                      radius: 34,
-                      backgroundColor: Colors.white,
-                      child: profileImage != null
-                          ? ClipOval(
-                              child: Image.memory(
-                                profileImage!,
-                                fit: BoxFit.cover,
-                                width: 68,
-                                height: 68,
-                              ),
-                            )
-                          : const Icon(
-                              Icons.person,
-                              size: 38,
-                              color: Colors.black,
-                            ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  if (userName == "Guest" || userEmail.isEmpty) ...[
-                    const Text(
-                      "Welcome to",
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    const Text(
-                      "Hara Hijabneeds",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ] else ...[
-                    Text(
-                      userName,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    Text(
-                      userEmail,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            _buildDrawerItem(
-              icon: Icons.home,
-              title: "Home",
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-
-            _buildDrawerItem(
-              icon: Icons.shopping_bag,
-              title: "Product",
-              onTap: () async {
-                await stopMusic();
-
-                Navigator.pop(context);
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ProductPage(),
-                  ),
-                );
-              },
-            ),
-
-            _buildDrawerItem(
-              icon: Icons.discount,
-              title: "Discount",
-              onTap: () async {
-                await stopMusic();
-
-                Navigator.pop(context);
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const DiscountPage(),
-                  ),
-                );
-              },
-            ),
-
-            _buildDrawerItem(
-              icon: Icons.favorite,
-              title: "Favorite",
-              onTap: () async {
-                await stopMusic();
-
-                Navigator.pop(context);
-
-                AuthGuard.check(
-                  context,
-                  FavoritePage(favorites: favoriteList),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+      drawer: const AppDrawer(currentPage: "Home"),
     );
   }
 

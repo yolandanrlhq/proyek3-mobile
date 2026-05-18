@@ -152,20 +152,39 @@ class ApiService {
     required String email,
     required String googleId,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/google-login'),
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'name': name,
-        'email': email,
-        'google_id': googleId,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/google-login'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'google_id': googleId,
+        }),
+      ).timeout(const Duration(seconds: 15));
 
-    return jsonDecode(response.body);
+      print("GOOGLE LOGIN STATUS: ${response.statusCode}");
+      print("GOOGLE LOGIN BODY: ${response.body}");
+
+      try {
+        return jsonDecode(response.body);
+      } catch (e) {
+        return {
+          'success': false,
+          'message': 'Response bukan JSON: ${response.body}',
+        };
+      }
+    } catch (e) {
+      print("GOOGLE API ERROR: $e");
+
+      return {
+        'success': false,
+        'message': 'Gagal menghubungi server: $e',
+      };
+    }
   }
 
   static Future<Map<String, dynamic>> resendOtp({

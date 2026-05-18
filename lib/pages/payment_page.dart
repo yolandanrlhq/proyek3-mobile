@@ -105,6 +105,34 @@ class _PaymentPageState extends State<PaymentPage> {
     return;
   }
 
+  final userName = prefs.getString('userName') ?? "Customer";
+  final userPhone = prefs.getString('phone') ?? "-";
+  final userAddress = fullAddressController.text.isNotEmpty
+      ? fullAddressController.text
+      : "Alamat belum diisi";
+
+  await loadOrders();
+
+  final order = OrderModel(
+    orderCode: "HARA-${DateTime.now().millisecondsSinceEpoch}",
+    products: widget.products,
+    quantities: widget.quantities.map(
+      (key, value) => MapEntry(key.kode, value),
+    ),
+    totalPayment: widget.totalPayment,
+    customerName: userName,
+    customerPhone: userPhone,
+    customerAddress: userAddress,
+    method: selectedMethod,
+    status: "Menunggu Konfirmasi Admin",
+    createdAt: DateTime.now(),
+  );
+
+  orderList.add(order);
+  await saveOrders();
+
+  print("ORDER SAVED: ${orderList.length}");
+
   for (final product in widget.products) {
     final qty = widget.quantities[product] ?? 1;
 
@@ -135,18 +163,6 @@ class _PaymentPageState extends State<PaymentPage> {
     }
   }
 
-  final userName = prefs.getString('userName') ??
-    prefs.getString('name') ??
-    "Customer";
-
-  final userPhone = prefs.getString('phone') ??
-      prefs.getString('no_telepon') ??
-      "-";
-
-  final userAddress = fullAddressController.text.isNotEmpty
-    ? fullAddressController.text
-    : "Alamat belum diisi";
-
   final message = '''
   Halo Admin Hara Hijabneeds, saya ingin melakukan pemesanan.
 
@@ -173,32 +189,6 @@ class _PaymentPageState extends State<PaymentPage> {
   ''';
     final Uri url = Uri.parse(
       "https://wa.me/6285321163909?text=${Uri.encodeComponent(message)}",
-    );
-
-    final order = OrderModel(
-      orderCode: "HARA-${DateTime.now().millisecondsSinceEpoch}",
-      products: widget.products,
-      quantities: widget.quantities.map(
-        (key, value) => MapEntry(key.kode, value),
-      ),
-      totalPayment: widget.totalPayment,
-      customerName: userName,
-      customerPhone: userPhone,
-      customerAddress: userAddress,
-      method: selectedMethod,
-      status: "Menunggu Konfirmasi Admin",
-      createdAt: DateTime.now(),
-    );
-
-    orderList.add(order);
-
-    final orderPrefs = await SharedPreferences.getInstance();
-
-    await orderPrefs.setString(
-      'orderList',
-      jsonEncode(
-        orderList.map((e) => e.toJson()).toList(),
-      ),
     );
 
     await launchUrl(

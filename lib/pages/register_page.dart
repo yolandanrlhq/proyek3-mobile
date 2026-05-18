@@ -14,6 +14,8 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   bool isLoading = false;
+  bool showPassword = false;
+  bool showConfirmPassword = false;
 
   final TextEditingController name = TextEditingController();
   final TextEditingController email = TextEditingController();
@@ -88,22 +90,48 @@ class _RegisterPageState extends State<RegisterPage> {
 
                   TextField(
                     controller: password,
-                    obscureText: true,
+                    obscureText: !showPassword,
                     decoration: _inputDecoration(
                       "Password",
                       Icons.lock_outline,
                       softPink,
+                    ).copyWith(
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          showPassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            showPassword = !showPassword;
+                          });
+                        },
+                      ),
                     ),
                   ),
                   const SizedBox(height: 14),
 
                   TextField(
                     controller: confirmPassword,
-                    obscureText: true,
+                    obscureText: !showConfirmPassword,
                     decoration: _inputDecoration(
                       "Confirm Password",
                       Icons.lock_reset_outlined,
                       softPink,
+                    ).copyWith(
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          showConfirmPassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            showConfirmPassword = !showConfirmPassword;
+                          });
+                        },
+                      ),
                     ),
                   ),
 
@@ -125,6 +153,15 @@ class _RegisterPageState extends State<RegisterPage> {
                         setState(() {
                           isLoading = true;
                         });
+
+                        if (password.text.contains(' ')) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Password tidak boleh mengandung spasi"),
+                            ),
+                          );
+                          return;
+                        }
 
                         if (password.text != confirmPassword.text) {
                           setState(() {

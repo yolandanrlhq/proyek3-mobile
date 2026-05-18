@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'product_page.dart';
+import 'product_detail_page.dart';
 
 class GlowMatchProductPage extends StatelessWidget {
   final List<dynamic> products;
@@ -9,6 +12,16 @@ class GlowMatchProductPage extends StatelessWidget {
     required this.products,
     required this.colors,
   });
+
+  String formatRupiah(dynamic price) {
+    final number = int.tryParse(price.toString()) ?? 0;
+
+    return NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp',
+      decimalDigits: 0,
+    ).format(number);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,13 +44,40 @@ class GlowMatchProductPage extends StatelessWidget {
               ),
               itemBuilder: (context, index) {
                 final product = products[index];
-                final imageUrl = (product['image_url'] ?? '').toString();
-                final nama = (product['nama_produk'] ?? 'Produk').toString();
-                final harga = (product['harga'] ?? 'Harga tidak tersedia').toString();
+                final imageUrl = (product['image_url'] ??
+                        product['foto'] ??
+                        product['gambar'] ??
+                        product['image'] ??
+                        '')
+                    .toString();
+
+                final nama = (product['nama_produk'] ??
+                        product['nama'] ??
+                        product['name'] ??
+                        'Produk')
+                    .toString();
+
+                final harga = (product['harga'] ??
+                        product['harga_jual'] ??
+                        product['price'] ??
+                        'Harga tidak tersedia')
+                    .toString();
                 final warna = (product['warna'] ?? '-').toString();
 
-                return Container(
-                  decoration: BoxDecoration(
+                final productModel = Product.fromJson(product);
+
+                return InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProductDetailPage(product: productModel),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(18),
+                  child: Container(
+                    decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
@@ -93,7 +133,7 @@ class GlowMatchProductPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              harga,
+                              formatRupiah(harga),
                               style: const TextStyle(
                                 fontWeight: FontWeight.w800,
                               ),
@@ -102,6 +142,7 @@ class GlowMatchProductPage extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
                   ),
                 );
               },

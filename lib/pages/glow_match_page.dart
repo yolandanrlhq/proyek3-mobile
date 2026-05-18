@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +7,10 @@ import '../services/api_service.dart';
 import '../services/product_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'glow_match_product_page.dart';
+import 'package:intl/intl.dart';
+import 'glow_match_history_page.dart';
+import 'product_page.dart';
+import 'product_detail_page.dart';
 
 enum GlowMatchViewState {
   choosing,
@@ -105,6 +108,7 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
   bool _isCapturing = false;
   bool _isUsingFrontCamera = true;
   String? _errorMessage;
+  String? _historyImageUrl;
 
   List<dynamic> _history = [];
   bool _isLoadingHistory = false;
@@ -152,7 +156,7 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
     }
   }
 
-  void _openHistoryResult(dynamic item) {
+  Future<void> _openHistoryResult(dynamic item) async {
     final skinTone = (item['warna_kulit'] ?? '').toString();
 
     final colors = (item['rekomendasi_warna'] ?? '')
@@ -162,18 +166,45 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
         .where((e) => e.isNotEmpty)
         .toList();
 
+    final products = await ProductService.getProducts();
+
+    final filtered = products.where((p) {
+      final warna = (p['warna'] ?? '').toString().toLowerCase().trim();
+
+      return colors.any((c) {
+        return warna == c.toLowerCase().trim();
+      });
+    }).toList();
+
+    final foto = (item['foto'] ?? '').toString();
+
+    final imageUrl = foto.isNotEmpty
+        ? '${ApiService.baseUrl.replaceAll('/api', '')}/storage/$foto'
+        : null;
+
     setState(() {
+      _selectedImageBytes = null;
       _skinToneLabel = skinTone.replaceAll('_', ' ').toUpperCase();
       _skinToneSubtitle = 'HASIL HISTORY SCAN';
 
       _recommendedColorNames = colors;
       _recommendedColors = colors.map((c) => _mapColorNameToColor(c)).toList();
 
-      _filteredProducts = [];
+      _filteredProducts = filtered;
+      _historyImageUrl = imageUrl;
       _viewState = GlowMatchViewState.result;
     });
   }
 
+  String formatRupiah(dynamic price) {
+    final number = int.tryParse(price.toString()) ?? 0;
+
+    return NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp',
+      decimalDigits: 0,
+    ).format(number);
+  }
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -330,6 +361,7 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
 
   Future<void> _analyzeFace() async {
     if (_selectedImageBytes == null) return;
+    _historyImageUrl = null;
 
     setState(() {
       _viewState = GlowMatchViewState.loading;
@@ -433,6 +465,7 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
       _skinToneSubtitle = '';
       _recommendedColors = [];
       _errorMessage = null;
+      _historyImageUrl = null;
       _viewState = GlowMatchViewState.choosing;
     });
   }
@@ -610,102 +643,31 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
 
           const SizedBox(height: 20),
 
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 6,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'History Glow Match',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _loadGlowMatchHistory,
-                      icon: const Icon(Icons.refresh),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 10),
-
-                if (_isLoadingHistory)
-                  const Center(child: CircularProgressIndicator())
-                else if (_history.isEmpty)
-                  const Text(
-                    'Belum ada history scan.',
-                    style: TextStyle(color: Colors.black54),
-                  )
-                else
-                  Column(
-                    children: _history.take(3).map((item) {
-                      final warnaKulit = (item['warna_kulit'] ?? '-').toString();
-                      final rekomendasi =
-                          (item['rekomendasi_warna'] ?? '-').toString();
-                      final tanggal = (item['created_at'] ?? '').toString();
-
-                      return InkWell(
-                        onTap: () => _openHistoryResult(item),
-                        borderRadius: BorderRadius.circular(14),
-                        child: Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8EEEE),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                warnaKulit.replaceAll('_', ' ').toUpperCase(),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                rekomendasi,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                tanggal.length >= 10
-                                    ? tanggal.substring(0, 10)
-                                    : tanggal,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => GlowMatchHistoryPage(
+                    histories: _history,
+                    onSelected: _openHistoryResult,
                   ),
-              ],
+                ),
+              );
+            },
+            icon: const Icon(Icons.history),
+            label: const Text('Lihat History Glow Match'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEAC1BB),
+              foregroundColor: const Color(0xFF2D1B1B),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
             ),
           ),
+
+          const SizedBox(height: 20),
           const SizedBox(height: 28),
           ElevatedButton.icon(
             onPressed: _openCameraLive,
@@ -984,7 +946,15 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
                   child: SizedBox(
                     width: 76,
                     height: 76,
-                    child: _buildSelectedImage(),
+                    child: _historyImageUrl != null
+                      ? Image.network(
+                          _historyImageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Center(
+                            child: Text('Foto tidak tersedia'),
+                          ),
+                        )
+                      : _buildSelectedImage(),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -1062,11 +1032,9 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
               }),
             ),
           ),
-          const SizedBox(height: 24),
           
           const SizedBox(height: 28),
           
-          const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
@@ -1091,9 +1059,11 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
           ),
 
           const SizedBox(height: 14),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
+          Center(
+            child: Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              alignment: WrapAlignment.center,
               children: _filteredProducts.isEmpty
                 ? [
                     const Padding(
@@ -1101,7 +1071,7 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
                       child: Text('Belum ada produk yang cocok'),
                     )
                   ]
-                : _filteredProducts.map((product) {
+                : _filteredProducts.take(2).map((product) {
                 final imageUrl = (product['image_url'] ??
                         product['foto'] ??
                         product['gambar'] ??
@@ -1121,9 +1091,21 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
                         'Harga tidak tersedia')
                     .toString();
 
-                return Container(
-                  width: 150,
-                  margin: const EdgeInsets.only(right: 12),
+                final productModel = Product.fromJson(product);
+
+                return InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProductDetailPage(product: productModel),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    width: 150,
+                    margin: const EdgeInsets.only(right: 12),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
@@ -1158,17 +1140,20 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
                       ),
 
                       Text(
-                        harga,
+                        formatRupiah(harga),
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
+                  ),
                 );
-              }).toList()
+              }).toList(),
             ),
           ),
+
+          const SizedBox(height: 28),
 
           SizedBox(
             width: double.infinity,

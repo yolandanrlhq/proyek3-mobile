@@ -5,11 +5,17 @@ import 'register_page.dart';
 import '../services/auth_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
-
-  LoginPage({super.key});
+  bool showPassword = false;
 
   @override
   Widget build(BuildContext context) {
@@ -74,10 +80,22 @@ class LoginPage extends StatelessWidget {
 
                   TextField(
                     controller: password,
-                    obscureText: true,
+                    obscureText: !showPassword,
                     decoration: InputDecoration(
                       labelText: "Password",
                       prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          showPassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            showPassword = !showPassword;
+                          });
+                        },
+                      ),
                       filled: true,
                       fillColor: softPink,
                       border: OutlineInputBorder(

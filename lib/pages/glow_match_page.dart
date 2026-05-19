@@ -1104,7 +1104,7 @@ class _GlowMatchScanPageState extends State<GlowMatchScanPage>
                   },
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    width: 150,
+                    width: 135,
                     margin: const EdgeInsets.only(right: 12),
                   decoration: BoxDecoration(
                     color: Colors.white,

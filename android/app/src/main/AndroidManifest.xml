@@ -5,11 +5,16 @@
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
-        android:label="app_hara"
-        android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
-        <activity
-            android:name=".MainActivity"
+    android:label="app_hara"
+    android:name="${applicationName}"
+    android:icon="@mipmap/ic_launcher">
+
+    <meta-data
+        android:name="com.google.firebase.messaging.default_notification_channel_id"
+        android:value="hara_channel_custom_sound_v2" />
+
+    <activity
+        android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""

@@ -5,6 +5,9 @@ import 'product_page.dart';
 import 'payment_page.dart';
 import 'product_detail_page.dart';
 
+import '../services/discount_service.dart';
+import '../models/discount_model.dart';
+
 class CheckoutPage extends StatefulWidget {
   final List<Product> products;
   final Map<Product, int> quantities;
@@ -22,7 +25,6 @@ class CheckoutPage extends StatefulWidget {
 }
 
 class _CheckoutPageState extends State<CheckoutPage> {
-
   late Map<Product, int> quantities;
 
   String userName = "User";
@@ -31,7 +33,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   // DISCOUNT
   bool isDiscountApplied = false;
-  int discountPercent = 10;
+  bool isLoadingDiscount = true;
+  List<DiscountModel> availableDiscounts = [];
+  DiscountModel? selectedDiscount;
+
+  int get discountPercent => selectedDiscount?.discountPercent ?? 0;
 
   @override
   void initState() {
@@ -42,6 +48,34 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
 
     loadProfileData();
+    loadDiscounts();
+  }
+
+  Future<void> loadDiscounts() async {
+    try {
+      final discounts = await DiscountService.getDiscounts();
+
+      if (!mounted) return;
+
+      setState(() {
+        availableDiscounts = discounts;
+        selectedDiscount = discounts.isNotEmpty ? discounts.first : null;
+        isLoadingDiscount = false;
+
+        if (discounts.isEmpty) {
+          isDiscountApplied = false;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        availableDiscounts = [];
+        selectedDiscount = null;
+        isLoadingDiscount = false;
+        isDiscountApplied = false;
+      });
+    }
   }
 
   Future<void> loadProfileData() async {
@@ -74,7 +108,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   // DISCOUNT REALTIME
   int get discountAmount {
-    if (isDiscountApplied) {
+    if (isDiscountApplied && selectedDiscount != null) {
       return (subtotal * discountPercent ~/ 100);
     }
 
@@ -88,32 +122,40 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   void increaseQty(Product product) {
     setState(() {
-      quantities[product] =
-          (quantities[product] ?? 1) + 1;
+      quantities[product] = (quantities[product] ?? 1) + 1;
     });
   }
 
   void decreaseQty(Product product) {
     setState(() {
       if ((quantities[product] ?? 1) > 1) {
-        quantities[product] =
-            (quantities[product] ?? 1) - 1;
+        quantities[product] = (quantities[product] ?? 1) - 1;
       }
     });
   }
 
   // APPLY DISCOUNT
   void applyDiscount() {
+    if (selectedDiscount == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Belum ada discount yang tersedia"),
+          backgroundColor: Color(0xFFF8C8C0),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       isDiscountApplied = true;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text(
-          "Discount 10% berhasil digunakan",
+          "Discount ${selectedDiscount!.discountPercent}% berhasil digunakan",
         ),
-        backgroundColor: Color(0xFFF8C8C0),
+        backgroundColor: const Color(0xFFF8C8C0),
       ),
     );
   }
@@ -135,12 +177,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4EDE7),
-
       appBar: AppBar(
         backgroundColor: const Color(0xFFE6B8AF),
         elevation: 0,
         centerTitle: true,
-
         title: const Text(
           "CHECKOUT",
           style: TextStyle(
@@ -149,46 +189,31 @@ class _CheckoutPageState extends State<CheckoutPage> {
             color: Color(0xFF2B1B16),
           ),
         ),
-
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back,
             color: Color(0xFF6B5A55),
           ),
-
           onPressed: () => Navigator.pop(context),
         ),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(22),
-
         child: Column(
           children: [
-
             _addressCard(),
-
             const SizedBox(height: 14),
-
             ...widget.products.map((item) {
               return Padding(
-                padding:
-                    const EdgeInsets.only(bottom: 14),
-
+                padding: const EdgeInsets.only(bottom: 14),
                 child: _productCard(item),
               );
             }),
-
             const SizedBox(height: 12),
-
             _discountCard(),
-
             const SizedBox(height: 12),
-
             _summaryCard(),
-
             const SizedBox(height: 22),
-
             _bottomButtons(),
           ],
         ),
@@ -201,48 +226,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: _cardDecoration(),
-
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
-
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          const Text(
-            "Alamat Pengiriman",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
+          const Text("Alamat Pengiriman", style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-
-          Text(
-            "$userName | $userPhone",
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-
+          Text("$userName | $userPhone", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
           const SizedBox(height: 6),
-
-          Text(
-            userAddress,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Colors.grey,
-            ),
-          ),
-
+          Text(userAddress, style: const TextStyle(fontSize: 11, color: Colors.grey)),
           const SizedBox(height: 14),
-
           const Text(
             "Admin akan mengonfirmasi ongkir dan estimasi pengiriman melalui WhatsApp.",
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey,
-            ),
+            style: TextStyle(fontSize: 11, color: Colors.grey),
           ),
         ],
       ),
@@ -251,118 +246,58 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Widget _productCard(Product item) {
     final qty = quantities[item] ?? 1;
-
-    final totalHarga =
-        item.price * qty;
+    final totalHarga = item.price * qty;
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: _cardDecoration(),
-
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
-
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           ClipRRect(
-            borderRadius:
-                BorderRadius.circular(4),
-
+            borderRadius: BorderRadius.circular(4),
             child: item.image.isNotEmpty
                 ? Image.network(
                     item.image,
                     width: 105,
                     height: 130,
                     fit: BoxFit.cover,
-
-                    errorBuilder:
-                        (context, error, stackTrace) {
+                    errorBuilder: (context, error, stackTrace) {
                       return _emptyImage();
                     },
                   )
                 : _emptyImage(),
           ),
-
           const SizedBox(width: 20),
-
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 Text(
                   item.name.toUpperCase(),
-
                   style: const TextStyle(
                     fontSize: 18,
                     letterSpacing: 2,
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                     color: Color(0xFF2B1B16),
                   ),
                 ),
-
                 const SizedBox(height: 8),
-
-                Text(
-                  formatRupiah(item.price),
-
-                  style: const TextStyle(
-                    color: Color(0xFFFF3D00),
-                    fontWeight:
-                        FontWeight.bold,
-                  ),
-                ),
-
+                Text(formatRupiah(item.price), style: const TextStyle(color: Color(0xFFFF3D00), fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
-
-                Text(
-                  "Total: ${formatRupiah(totalHarga)}",
-
-                  style: const TextStyle(
-                    fontWeight:
-                        FontWeight.bold,
-                  ),
-                ),
-
+                Text("Total: ${formatRupiah(totalHarga)}", style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
-
                 Text(
                   "Color: ${item.warna}\nSize: ${selectedSizeCart[item.kode] ?? '-'}",
-                  style: const TextStyle(
-                    letterSpacing: 1,
-                    color: Color(0xFF3A2A25),
-                  ),
+                  style: const TextStyle(letterSpacing: 1, color: Color(0xFF3A2A25)),
                 ),
-
                 const SizedBox(height: 14),
-
                 Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment.end,
-
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-
-                    InkWell(
-                      onTap: () {
-                        decreaseQty(item);
-                      },
-
-                      child: _qtyBox("-"),
-                    ),
-
+                    InkWell(onTap: () => decreaseQty(item), child: _qtyBox("-")),
                     _qtyBox("$qty"),
-
-                    InkWell(
-                      onTap: () {
-                        increaseQty(item);
-                      },
-
-                      child: _qtyBox("+"),
-                    ),
+                    InkWell(onTap: () => increaseQty(item), child: _qtyBox("+")),
                   ],
                 ),
               ],
@@ -374,96 +309,68 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Widget _discountCard() {
+    final bool hasDiscount = selectedDiscount != null;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: _cardDecoration(),
-
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
-
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          const Text(
-            "Available Discount",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-            ),
-          ),
-
+          const Text("Available Discount", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
           const SizedBox(height: 14),
-
           Container(
             padding: const EdgeInsets.all(14),
-
             decoration: BoxDecoration(
               color: const Color(0xFFFFF3F0),
-
-              borderRadius:
-                  BorderRadius.circular(10),
-
-              border: Border.all(
-                color: const Color(0xFFF8C8C0),
-              ),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFF8C8C0)),
             ),
-
             child: Row(
               children: [
-
-                const Icon(
-                  Icons.discount,
-                  color: Color(0xFFE48A8A),
-                ),
-
+                const Icon(Icons.discount, color: Color(0xFFE48A8A)),
                 const SizedBox(width: 12),
-
-                const Expanded(
+                Expanded(
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
                       Text(
-                        "FLASH SALE 10%",
-                        style: TextStyle(
-                          fontWeight:
-                              FontWeight.bold,
-                        ),
+                        isLoadingDiscount
+                            ? "MEMUAT DISCOUNT..."
+                            : hasDiscount
+                                ? "${selectedDiscount!.title.toUpperCase()} ${selectedDiscount!.discountPercent}%"
+                                : "TIDAK ADA DISCOUNT",
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-
-                      SizedBox(height: 4),
-
+                      const SizedBox(height: 4),
                       Text(
-                        "Diskon spesial untuk semua produk",
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
-                        ),
+                        isLoadingDiscount
+                            ? "Sedang mengecek discount tersedia"
+                            : hasDiscount
+                                ? "Diskon spesial untuk semua produk"
+                                : "Saat ini belum ada discount yang bisa digunakan",
+                        style: const TextStyle(fontSize: 11, color: Colors.grey),
                       ),
                     ],
                   ),
                 ),
-
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        const Color(0xFFF8C8C0),
+                    backgroundColor: hasDiscount ? const Color(0xFFF8C8C0) : Colors.grey[300],
                   ),
-
-                  onPressed: isDiscountApplied
-                      ? cancelDiscount
-                      : applyDiscount,
-
+                  onPressed: isLoadingDiscount || !hasDiscount
+                      ? null
+                      : isDiscountApplied
+                          ? cancelDiscount
+                          : applyDiscount,
                   child: Text(
-                    isDiscountApplied
-                        ? "Cancel"
-                        : "Apply",
-                    style: const TextStyle(
-                      color: Colors.black87,
-                    ),
+                    isLoadingDiscount || !hasDiscount
+                        ? "Unavailable"
+                        : isDiscountApplied
+                            ? "Cancel"
+                            : "Apply",
+                    style: const TextStyle(color: Colors.black87),
                   ),
                 ),
               ],
@@ -477,46 +384,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Widget _summaryCard() {
     return Container(
       width: double.infinity,
-
-      padding: const EdgeInsets.symmetric(
-        horizontal: 38,
-        vertical: 22,
-      ),
-
+      padding: const EdgeInsets.symmetric(horizontal: 38, vertical: 22),
       decoration: _cardDecoration(),
-
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
-
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          const Text(
-            "Order Summary",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
+          const Text("Order Summary", style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 18),
-
-          _summaryRow(
-            "Subtotal",
-            formatRupiah(subtotal),
-          ),
-
-          if (isDiscountApplied)
-            _summaryRow(
-              "Discount 10%",
-              "- ${formatRupiah(discountAmount)}",
-            ),
-
+          _summaryRow("Subtotal", formatRupiah(subtotal)),
+          if (isDiscountApplied && selectedDiscount != null)
+            _summaryRow("Discount $discountPercent%", "- ${formatRupiah(discountAmount)}"),
           const Divider(),
-
-          _summaryRow(
-            "TOTAL",
-            formatRupiah(total),
-          ),
+          _summaryRow("TOTAL", formatRupiah(total)),
         ],
       ),
     );
@@ -524,32 +403,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Widget _bottomButtons() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 40,
-        vertical: 18,
-      ),
-
+      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
       decoration: _cardDecoration(),
-
       child: SizedBox(
         width: double.infinity,
-
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor:
-                const Color(0xFFFF6B6B),
-
-            padding:
-                const EdgeInsets.symmetric(
-              vertical: 14,
-            ),
-
-            shape: RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(5),
-            ),
+            backgroundColor: const Color(0xFFFF6B6B),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
           ),
-
           onPressed: () {
             final hasEmptySize = widget.products.any(
               (item) => selectedSizeCart[item.kode] == null,
@@ -557,16 +420,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
             if (hasEmptySize) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Ada produk yang belum memilih ukuran"),
-                ),
+                const SnackBar(content: Text("Ada produk yang belum memilih ukuran")),
               );
               return;
             }
 
             Navigator.push(
               context,
-
               MaterialPageRoute(
                 builder: (_) => PaymentPage(
                   products: widget.products,
@@ -576,42 +436,23 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ),
             );
           },
-
           child: const Text(
             "Checkout Sekarang",
-
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ),
       ),
     );
   }
 
-  Widget _summaryRow(
-    String title,
-    String value,
-  ) {
+  Widget _summaryRow(String title, String value) {
     return Padding(
-      padding:
-          const EdgeInsets.only(bottom: 10),
-
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
-        mainAxisAlignment:
-            MainAxisAlignment.spaceBetween,
-
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-
           Text(title),
-
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -621,23 +462,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
     return Container(
       width: 30,
       height: 30,
-
       margin: const EdgeInsets.only(left: 8),
-
       decoration: BoxDecoration(
         color: const Color(0xFFE0E0E0),
-        borderRadius:
-            BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(5),
       ),
-
       alignment: Alignment.center,
-
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
     );
   }
 
@@ -653,10 +484,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
       color: Colors.white,
-
-      borderRadius:
-          BorderRadius.circular(9),
-
+      borderRadius: BorderRadius.circular(9),
       boxShadow: const [
         BoxShadow(
           color: Colors.black12,

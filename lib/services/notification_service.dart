@@ -30,12 +30,13 @@ class NotificationService {
         message.notification?.body ?? '',
         const NotificationDetails(
           android: AndroidNotificationDetails(
-            'hara_channel',
+            'hara_channel_custom_sound_v2',
             'Hara Notifications',
             channelDescription: 'Notifikasi Hara Hijabneeds',
             importance: Importance.max,
             priority: Priority.high,
             playSound: true,
+            sound: RawResourceAndroidNotificationSound('hara_hijabneeds'),
           ),
         ),
       );

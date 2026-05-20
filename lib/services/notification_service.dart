@@ -5,6 +5,16 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin localNotifications =
       FlutterLocalNotificationsPlugin();
 
+  static const AndroidNotificationChannel haraChannel =
+      AndroidNotificationChannel(
+    'hara_notifications_final',
+    'Hara Notifications',
+    description: 'Notifikasi Hara Hijabneeds',
+    importance: Importance.max,
+    playSound: true,
+    sound: RawResourceAndroidNotificationSound('hara_hijabneeds'),
+  );
+
   static Future<void> init() async {
     final messaging = FirebaseMessaging.instance;
 
@@ -23,14 +33,22 @@ class NotificationService {
 
     await localNotifications.initialize(settings);
 
+    await localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(haraChannel);
+
+    final token = await messaging.getToken();
+    print('FCM TOKEN BARU: $token');
+
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       await localNotifications.show(
         DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        message.notification?.title ?? 'Hara Hijabneeds',
-        message.notification?.body ?? '',
+        message.data['title'] ?? 'Hara Hijabneeds',
+        message.data['body'] ?? '',
         const NotificationDetails(
           android: AndroidNotificationDetails(
-            'hara_channel_custom_sound_v2',
+            'hara_notifications_final',
             'Hara Notifications',
             channelDescription: 'Notifikasi Hara Hijabneeds',
             importance: Importance.max,
@@ -44,6 +62,8 @@ class NotificationService {
   }
 
   static Future<String?> getToken() async {
-    return FirebaseMessaging.instance.getToken();
+    final token = await FirebaseMessaging.instance.getToken();
+    print('FCM TOKEN BARU: $token');
+    return token;
   }
 }

@@ -9,9 +9,9 @@
     android:name="${applicationName}"
     android:icon="@mipmap/ic_launcher">
 
-    <meta-data
-        android:name="com.google.firebase.messaging.default_notification_channel_id"
-        android:value="hara_channel_custom_sound_v2" />
+   <meta-data
+    android:name="com.google.firebase.messaging.default_notification_channel_id"
+    android:value="hara_notifications_final" />
 
     <activity
         android:name=".MainActivity"

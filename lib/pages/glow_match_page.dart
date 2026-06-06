@@ -24,64 +24,64 @@ enum GlowMatchViewState {
 List<String> _getProductColorsBySkinTone(String skinTone) {
   final tone = skinTone.toLowerCase();
 
+  // 1. Putih Gading / Fair
   if (tone.contains('putih')) {
     return [
-      'Black',
-      'Navy',
-      'Soft Yellow',
       'Dusty Pink',
-      'Sky Blue',
-    ];
-  }
-
-  if (tone.contains('kuning') || tone.contains('langsat')) {
-    return [
-      'Coral',
       'Peach',
-      'Sky Blue',
+      'Coral',
       'Soft Yellow',
-      'Dusty Pink',
-      'Black',
-      'Ivory',
+      'Sky Blue',
+      'Taupe',
     ];
   }
 
-  if (tone.contains('sawo') || tone.contains('matang')) {
+  // 2. Kuning Langsat
+  if (tone.contains('kuning') || tone.contains('langsat')) {
     return [
       'Ivory',
       'Biscuit',
       'Latte',
+      'Grey Latte',
       'Taupe',
       'Dusty Pink',
-      'Sky Blue',
-      'Coral',
       'Peach',
+    ];
+  }
+
+  // 3. Sawo Matang
+  if (tone.contains('sawo') || tone.contains('matang')) {
+    return [
+      'Ivory',
       'Golden Brown',
+      'Dark Choco',
       'Dark Brown',
       'Navy',
-      'Black',
+      'Charcoal',
+      'Taupe',
     ];
   }
 
+  // 4. Kulit Gelap / Deep
   if (tone.contains('gelap')) {
     return [
-      'Soft Yellow',
-      'Sky Blue',
-      'Dusty Pink',
       'Ivory',
       'Pearl',
+      'Sky Blue',
+      'Soft Yellow',
       'Coral',
-      'Peach',
+      'Navy',
+      'Golden Brown',
     ];
   }
 
+  // Default / Fallback jika tidak terdeteksi
   return [
     'Ivory',
+    'Taupe',
     'Dusty Pink',
-    'Sky Blue',
-    'Peach',
-    'Black',
     'Navy',
+    'Black',
   ];
 }
 

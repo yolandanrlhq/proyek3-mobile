@@ -1,6 +1,7 @@
 import 'product_page.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/auth_service.dart'; // Memastikan integrasi dengan session login Anda
 
 class OrderModel {
   final String orderCode;
@@ -27,6 +28,7 @@ class OrderModel {
     required this.createdAt,
   });
 
+  // Mengubah objek objek OrderModel menjadi format Map/JSON untuk SharedPreferences
   Map<String, dynamic> toJson() {
     return {
       'orderCode': orderCode,
@@ -42,6 +44,7 @@ class OrderModel {
     };
   }
 
+  // Membaca data JSON dari SharedPreferences kembali menjadi bentuk objek OrderModel
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     final List<Product> productList =
         (json['products'] as List)
@@ -68,28 +71,46 @@ class OrderModel {
   }
 }
 
+// Global state list yang diakses oleh OrderStatusPage
 List<OrderModel> orderList = [];
 
+// --- MENYIMPAN PESANAN BERDASARKAN SESSION EMAIL PENGGUNA ---
 Future<void> saveOrders() async {
   final prefs = await SharedPreferences.getInstance();
+  
+  // Mengambil session email dari AuthService Anda (menggunakan key 'userEmail')
+  final String? email = await AuthService.getUserEmail(); 
 
+  // Menentukan Key unik penyimpanan local, jika kosong otomatis masuk ke kelompok 'guest'
+  String userKey = (email != null && email.isNotEmpty) ? email : 'guest';
+    
   await prefs.setString(
-    'orderList',
+    'orderList_$userKey',
     jsonEncode(orderList.map((e) => e.toJson()).toList()),
   );
 }
 
+// --- MEMUAT PESANAN BERDASARKAN SESSION EMAIL PENGGUNA ---
 Future<void> loadOrders() async {
   final prefs = await SharedPreferences.getInstance();
+  
+  // Mengambil session email dari AuthService Anda
+  final String? email = await AuthService.getUserEmail(); 
+  
+  String userKey = (email != null && email.isNotEmpty) ? email : 'guest';
 
-  final orderString = prefs.getString('orderList');
+  final orderString = prefs.getString('orderList_$userKey');
 
-  if (orderString == null) return;
+  // Proteksi Krusial: Jika data local kosong, langsung hapus sisa data di memori 
+  // agar histori akun sebelumnya tidak bocor atau menyangkut di layar.
+  if (orderString == null) {
+    orderList.clear();
+    return;
+  }
 
   final List decoded = jsonDecode(orderString);
 
   orderList.clear();
-
   orderList.addAll(
     decoded
         .map((item) => OrderModel.fromJson(item))

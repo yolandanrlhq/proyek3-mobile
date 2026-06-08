@@ -19,6 +19,27 @@ class ProductPage extends StatefulWidget {
 class _ProductPageState extends State<ProductPage> {
   bool isLoading = true;
   List<Product> products = [];
+  
+  // State untuk menampung data yang sudah di-filter & sort
+  List<Product> filteredProducts = [];
+
+  // State parameter filter & sort terpilih
+  String? _selectedCategory;
+  String? _selectedColor;
+  String? _selectedSize;
+  int? _selectedPrice;
+  String _currentSort = "Newest";
+
+  // Data master opsi filter sesuai isi database tabel Anda
+  final List<String> _categories = ["Instant Syar'i", "Square Hijab", "Pashmina"];
+  final List<String> _colors = [
+    "Ivory", "Sky Blue", "Taupe", "Dark Choco", "Black", "Shadow",
+    "Grey Latte", "Walnute", "Dark Brown", "Pearl", "Charcoal",
+    "Smoke", "Dusty Pink", "Navy", "Biscuit", "Soft Yellow",
+    "Golden Brown", "Grey Seal", "Latte", "Coral", "Peach"
+  ];
+  final List<String> _sizes = ["S", "M", "L"];
+  final List<int> _prices = [60000, 80000, 85000, 150000];
 
   @override
   void initState() {
@@ -48,6 +69,8 @@ class _ProductPageState extends State<ProductPage> {
         setState(() {
           products = productData.map((item) => Product.fromJson(item)).toList();
           isLoading = false;
+          // Terapkan filter & sort awal setelah data berhasil dimuat
+          _applyFilterAndSort();
         });
       } else {
         setState(() => isLoading = false);
@@ -56,6 +79,204 @@ class _ProductPageState extends State<ProductPage> {
       print('ERROR FETCH PRODUCT = $e');
       setState(() => isLoading = false);
     }
+  }
+
+  // Fungsi Logika Memproses Filter dan Sorting Data
+  void _applyFilterAndSort() {
+    setState(() {
+      filteredProducts = products.where((product) {
+        final matchCategory = _selectedCategory == null || product.kategori == _selectedCategory;
+        final matchColor = _selectedColor == null || product.warna == _selectedColor;
+        
+        // Pengecekan ukuran di dalam array ukurans produk
+        bool matchSize = _selectedSize == null;
+        if (_selectedSize != null) {
+          matchSize = product.ukurans.any((u) => u['ukuran'] == _selectedSize);
+        }
+
+        // Filter harga di bawah atau sama dengan opsi terpilih
+        final matchPrice = _selectedPrice == null || product.price <= _selectedPrice!;
+
+        return matchCategory && matchColor && matchSize && matchPrice;
+      }).toList();
+
+      // Logika Pengurutan (Sorting)
+      if (_currentSort == "Newest") {
+        // Jika di database Anda tidak ada kolom tanggal, pengurutan dibalik berdasarkan kode produk (ID) terbaru
+        filteredProducts.sort((a, b) => b.kode.compareTo(a.kode));
+      } else if (_currentSort == "Harga Terendah") {
+        filteredProducts.sort((a, b) => a.price.compareTo(b.price));
+      } else if (_currentSort == "Harga Tertinggi") {
+        filteredProducts.sort((a, b) => b.price.compareTo(a.price));
+      }
+    });
+  }
+
+  // --- POPUP MODAL DIALOG UNTUK FILTER BY (Sesuai Gambar UI) ---
+  // --- POPUP MODAL DIALOG UNTUK FILTER BY ---
+  void _showFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+            width: MediaQuery.of(context).size.width * 0.8,
+            // HAPUS mainAxisSize dari sini! Container tidak punya properti ini.
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // Sifat ini seharusnya ada di sini (sudah benar)
+              children: [
+                const Text(
+                  "FILTER BY:",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold, 
+                    fontSize: 16, 
+                    color: Colors.grey,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildFilterMenuButton("CATEGORY", () => _showSubFilterOptions("Category", _categories)),
+                _buildFilterMenuButton("COLOR", () => _showSubFilterOptions("Color", _colors)),
+                _buildFilterMenuButton("TYPE / SIZE", () => _showSubFilterOptions("Size", _sizes)),
+                _buildFilterMenuButton("PRICE", () => _showSubFilterOptions("Price", _prices.map((e) => "≤ ${formatRupiah(e)}").toList())),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedCategory = null;
+                      _selectedColor = null;
+                      _selectedSize = null;
+                      _selectedPrice = null;
+                    });
+                    _applyFilterAndSort();
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Reset Filter", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterMenuButton(String title, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: SizedBox(
+        width: double.infinity,
+        height: 48,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFFBF1EB),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: const BorderSide(color: Colors.black12),
+            ),
+          ),
+          onPressed: onTap,
+          child: Text(
+            title,
+            style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w600, letterSpacing: 1),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Modal Sub-Opsi untuk memilih item spesifik di dalam kategori filter
+  void _showSubFilterOptions(String type, List<String> options) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Select $type", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Divider(),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: options.length,
+                  itemBuilder: (context, index) {
+                    final option = options[index];
+                    return ListTile(
+                      title: Text(option),
+                      onTap: () {
+                        setState(() {
+                          if (type == "Category") _selectedCategory = option;
+                          if (type == "Color") _selectedColor = option;
+                          if (type == "Size") _selectedSize = option;
+                          if (type == "Price") _selectedPrice = _prices[index];
+                        });
+                        _applyFilterAndSort();
+                        Navigator.pop(context); // Tutup BottomSheet
+                        Navigator.pop(context); // Tutup Filter Dialog Utama
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // --- MODAL BOTTOM SHEET UNTUK SORT BY ---
+  void _showSortBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (context) {
+        return Wrap(
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text("SORT BY", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text("Newest"),
+              trailing: _currentSort == "Newest" ? const Icon(Icons.check, color: Color(0xFFE75480)) : null,
+              onTap: () {
+                setState(() => _currentSort = "Newest");
+                _applyFilterAndSort();
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.arrow_downward),
+              title: const Text("Harga Terendah"),
+              trailing: _currentSort == "Harga Terendah" ? const Icon(Icons.check, color: Color(0xFFE75480)) : null,
+              onTap: () {
+                setState(() => _currentSort = "Harga Terendah");
+                _applyFilterAndSort();
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.arrow_upward),
+              title: const Text("Harga Tertinggi"),
+              trailing: _currentSort == "Harga Tertinggi" ? const Icon(Icons.check, color: Color(0xFFE75480)) : null,
+              onTap: () {
+                setState(() => _currentSort = "Harga Tertinggi");
+                _applyFilterAndSort();
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void toggleFavorite(Product product) async {
@@ -76,9 +297,7 @@ class _ProductPageState extends State<ProductPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F7),
-
-  drawer: const AppDrawer(currentPage: "Product"),
-
+      drawer: const AppDrawer(currentPage: "Product"),
       appBar: AppBar(
         backgroundColor: const Color(0xFFF7C9C0),
         elevation: 0,
@@ -128,7 +347,6 @@ class _ProductPageState extends State<ProductPage> {
                       );
                     },
                   ),
-
                   if (count > 0)
                     Positioned(
                       right: 6,
@@ -146,7 +364,7 @@ class _ProductPageState extends State<ProductPage> {
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
-                        )
+                        ),
                       ),
                     ),
                 ],
@@ -155,27 +373,144 @@ class _ProductPageState extends State<ProductPage> {
           ),
         ],
       ),
-
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : GridView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: products.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 0.68,
-              ),
-              itemBuilder: (context, index) {
-                final product = products[index];
+          : Column(
+              children: [
+                // --- BAR ATAS: FILTER & SORT YANG LEBIH EYE-CATCHING ---
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30), // Membuat bar melengkung halus
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFF7C9C0).withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5), // Efek bayangan lembut di bawah bar
+                        ),
+                      ],
+                    ),
+                    child: IntrinsicHeight(
+                      child: Row(
+                        children: [
+                          // Tombol Filter
+                          Expanded(
+                            child: InkWell(
+                              onTap: _showFilterDialog,
+                              borderRadius: BorderRadius.circular(25),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFFFEEF3),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.tune_rounded, size: 16, color: Color(0xFFE75480)),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const Text(
+                                      "Filter By",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                        color: Colors.black87,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          
+                          // Garis Pembatas Tengah (Divider)
+                          VerticalDivider(
+                            color: Colors.grey.withOpacity(0.2),
+                            thickness: 1.5,
+                            indent: 5,
+                            endIndent: 5,
+                          ),
+                          
+                          // Tombol Sort
+                          Expanded(
+                            child: InkWell(
+                              onTap: _showSortBottomSheet,
+                              borderRadius: BorderRadius.circular(25),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFFFEEF3),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.swap_vert_rounded, size: 16, color: Color(0xFFE75480)),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        _currentSort,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13,
+                                          color: Colors.black87,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
 
-                return ProductCard(
-                  product: product,
-                  isFavorite: favoriteList.any((item) => item.kode == product.kode),
-                  onFavorite: () => toggleFavorite(product),
-                );
-              },
+                // --- GRID DATA PRODUK ---
+                Expanded(
+                  child: filteredProducts.isEmpty
+                      ? const Center(
+                          child: Text(
+                            "Produk tidak ditemukan.",
+                            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
+                          ),
+                        )
+                      : GridView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                          itemCount: filteredProducts.length,
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 0.68,
+                          ),
+                          itemBuilder: (context, index) {
+                            final product = filteredProducts[index];
+
+                            return ProductCard(
+                              product: product,
+                              isFavorite: favoriteList.any((item) => item.kode == product.kode),
+                              onFavorite: () => toggleFavorite(product),
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
     );
   }

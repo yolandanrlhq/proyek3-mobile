@@ -19,6 +19,13 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
   }
 
   Future<void> loadData() async {
+    // Bersihkan list global terlebih dahulu saat memuat halaman 
+    // agar data pesanan akun sebelumnya tidak mengintip secara sekilas
+    setState(() {
+      orderList = [];
+    });
+
+    // Memuat pesanan berdasarkan session email aktif dari SharedPreferences
     await loadOrders();
     print("ORDER LOADED: ${orderList.length}");
 
@@ -35,7 +42,6 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
         backgroundColor: const Color(0xFFF5C8C3),
         elevation: 0,
         centerTitle: true,
-
         leading: Builder(
           builder: (context) => IconButton(
             icon: const Icon(
@@ -47,7 +53,6 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
             },
           ),
         ),
-
         title: const Text(
           "Pesanan Saya",
           style: TextStyle(
@@ -60,25 +65,48 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
           ? const Center(
               child: Text(
                 "Belum ada pesanan",
-                style: TextStyle(color: Colors.black54),
+                style: TextStyle(
+                  color: Colors.black54,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             )
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: orderList.length,
               itemBuilder: (context, index) {
-                final order = orderList[index];
+                // Menggunakan model data yang benar (OrderModel)
+                final OrderModel order = orderList[index];
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: ListTile(
-                    leading: const Icon(Icons.receipt_long),
-                    title: Text(order.orderCode),
-                    subtitle: Text(
-                      "${order.status}\nTotal: ${formatRupiah(order.totalPayment)}",
+                    leading: const Icon(
+                      Icons.receipt_long,
+                      color: Color(0xFFE75480),
+                    ),
+                    title: Text(
+                      order.orderCode,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        "Status: ${order.status}\nTotal: ${formatRupiah(order.totalPayment)}",
+                        style: const TextStyle(height: 1.3),
+                      ),
                     ),
                     isThreeLine: true,
-                    trailing: const Icon(Icons.chevron_right),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: Colors.black54,
+                    ),
                     onTap: () {
                       Navigator.push(
                         context,
